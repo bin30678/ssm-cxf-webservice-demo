@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.cxfdemo.mapper.DemoMapper">
+    <resultMap id="policyMap" type="com.example.cxfdemo.model.PolicyInfo">
+        <id property="policyNo" column="policy_no"/>
+        <result property="holderName" column="holder_name"/>
+        <result property="productName" column="product_name"/>
+        <result property="status" column="status"/>
+    </resultMap>
+    <resultMap id="uploadMap" type="com.example.cxfdemo.model.FileUploadRecord">
+        <id property="id" column="id"/>
+        <result property="originalName" column="original_name"/>
+        <result property="storedName" column="stored_name"/>
+        <result property="contentType" column="content_type"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findPolicy" resultMap="policyMap">
+        SELECT policy_no, holder_name, product_name, status
+        FROM policy_info WHERE policy_no = #{policyNo}
+    </select>
+    <select id="findPolicies" resultMap="policyMap">
+        SELECT policy_no, holder_name, product_name, status
+        FROM policy_info ORDER BY policy_no
+    </select>
+    <insert id="insertUpload" parameterType="com.example.cxfdemo.model.FileUploadRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO file_upload_record
+            (original_name, stored_name, content_type, size_bytes, description, created_at)
+        VALUES
+            (#{originalName}, #{storedName}, #{contentType}, #{sizeBytes}, #{description}, #{createdAt})
+    </insert>
+    <select id="findLatestUploads" resultMap="uploadMap">
+        SELECT id, original_name, stored_name, content_type, size_bytes, description, created_at
+        FROM file_upload_record ORDER BY id DESC LIMIT 50
+    </select>
+</mapper>

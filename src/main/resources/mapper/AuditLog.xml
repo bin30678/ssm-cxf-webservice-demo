@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AuditLog">
+
+    <insert id="insertRequestLog" parameterType="map">
+        INSERT INTO audit_request (guid, client_ip, client_type, hostname, request_uri, request_method)
+        VALUES (#{guid}, #{ip}, #{clientType}, #{hostname}, #{uri}, #{method})
+    </insert>
+
+    <insert id="insertResponseLog" parameterType="map">
+        INSERT INTO audit_response (guid, response_code)
+        VALUES (#{guid}, #{responseCode})
+    </insert>
+
+    <insert id="insertFaultLog" parameterType="map">
+        INSERT INTO audit_fault (guid, error_msg)
+        VALUES (#{guid}, #{errorMsg})
+    </insert>
+
+</mapper>

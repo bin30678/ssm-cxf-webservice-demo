@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ExternalApiLog">
+
+    <insert id="insertApiLog" parameterType="map">
+        INSERT INTO external_api_log (url, param, response_body, exception_msg, call_time)
+        VALUES (#{url}, #{requestParam}, #{responseBody}, #{exceptionMsg}, #{callTime})
+    </insert>
+
+</mapper>

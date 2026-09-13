@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+           http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+           http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd">
+
+    <context:component-scan base-package="com.example.cxfdemo">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!-- DB 系統參數載入器 (取代原本的 PropertyPlaceholderConfigurer) -->
+    <!-- 直接在裡面 new GenericDao() 拿連線，不需要依賴 Spring 注入 DataSource -->
+    <bean class="com.example.cxfdemo.config.DatabasePropertyPlaceholderConfigurer" />
+
+    <!-- 將載入的 DB 參數 ${system.app.url} 透過 MethodInvokingFactoryBean 寫入 GlobalConfig 的靜態變數 -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="com.example.cxfdemo.config.GlobalConfig"/>
+        <property name="targetMethod" value="setUrl"/>
+        <property name="arguments">
+            <list>
+                <!-- 這個 ${system.app.url} 會被上面的 DatabasePropertyPlaceholderConfigurer 從 DB 解析出來，若 DB 無值則採用預設值 -->
+                <value>${system.app.url:http://localhost:8080/cxfdemo}</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- cxfdemo1 DataSource -->
+    <jee:jndi-lookup id="dataSource1" jndi-name="jdbc/cxfdemo1" expected-type="javax.sql.DataSource"/>
+
+    <bean id="sqlSessionFactory1" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource1"/>
+        <property name="mapperLocations" value="classpath*:mapper/*.xml"/>
+        <property name="typeAliasesPackage" value="com.example.cxfdemo.model"/>
+    </bean>
+
+    <bean id="transactionManager1" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource1"/>
+    </bean>
+    
+    <bean id="sqlSessionTemplate1" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactory1" />
+    </bean>
+    
+    <bean id="jdbcTemplate1" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource1"/>
+    </bean>
+
+    <!-- DataSource 2 (AS400 / DB2 模擬) -->
+    <jee:jndi-lookup id="dataSource2" jndi-name="jdbc/cxfdemo2" resource-ref="true" expected-type="javax.sql.DataSource"/>
+
+    <bean id="sqlSessionFactory2" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource2"/>
+    </bean>
+
+    <bean id="transactionManager2" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource2"/>
+    </bean>
+
+    <bean id="sqlSessionTemplate2" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg index="0" ref="sqlSessionFactory2" />
+    </bean>
+    
+    <bean id="jdbcTemplate2" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource2"/>
+    </bean>
+
+    <!-- Scanner 只為 db1 建立 Mapper Interface，避免混淆 (或可設定兩個 scanner 掃不同 package) -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.example.cxfdemo.mapper, com.example.cxfdemo.dao"/>
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory1"/>
+    </bean>
+
+    <!-- JavaMailSender 配置 (動態從 DatabasePropertyPlaceholderConfigurer / system_properties 讀取) -->
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="${mail.smtp.host:smtp.example.com}"/>
+        <property name="port" value="${mail.smtp.port:25}"/>
+        <property name="username" value="${mail.smtp.username:your_username}"/>
+        <property name="password" value="${mail.smtp.password:your_password}"/>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.transport.protocol">${mail.transport.protocol:smtp}</prop>
+                <prop key="mail.smtp.auth">${mail.smtp.auth:true}</prop>
+                <prop key="mail.smtp.starttls.enable">${mail.smtp.starttls.enable:true}</prop>
+                <prop key="mail.debug">${mail.debug:false}</prop>
+            </props>
+        </property>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager1"/>
+
+    <import resource="classpath:cxf-bus.xml"/>
+
+    <!-- Quartz 配置 -->
+    <bean id="quartzDemoJobDetail" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="com.example.cxfdemo.scheduler.QuartzDemoJob"/>
+        <property name="durability" value="true"/>
+    </bean>
+
+    <bean id="quartzDemoTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+        <property name="jobDetail" ref="quartzDemoJobDetail"/>
+        <property name="startDelay" value="1000"/> <!-- 啟動後 1 秒觸發 -->
+        <property name="repeatInterval" value="300000"/> <!-- 每 5 分鐘 (300,000 ms) 觸發一次 -->
+    </bean>
+
+    <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="quartzDemoTrigger"/>
+            </list>
+        </property>
+    </bean>
+
+    <!-- 啟用 Spring @Scheduled 註解支援 -->
+    <task:annotation-driven/>
+
+</beans>

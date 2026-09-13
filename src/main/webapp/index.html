@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SSM + Apache CXF Demo</title>
+    <style>
+        body { max-width: 900px; margin: 36px auto; padding: 0 16px; font-family: system-ui, sans-serif; color: #173b5f; background: #f4f7fa; }
+        section { background: white; margin: 16px 0; padding: 20px; border-radius: 10px; box-shadow: 0 4px 16px #173b5f12; }
+        code { background: #edf2f7; padding: 2px 5px; }
+        input, button { padding: 9px; margin: 5px 0; }
+        label { display: block; margin-top: 8px; }
+        pre { white-space: pre-wrap; background: #0f2942; color: #e7f1fb; padding: 12px; overflow: auto; }
+    </style>
+</head>
+<body>
+<h1>SSM + Apache CXF</h1>
+<section>
+    <h2>REST API（共同前綴 /rest/api）</h2>
+    <ul>
+        <li><a href="rest/api/health">GET /rest/api/health</a></li>
+        <li><a href="rest/api/policies/P-2026-0001">GET /rest/api/policies/P-2026-0001</a></li>
+        <li><a href="rest/api/policies/P-2026-0001.json">GET /rest/api/policies/P-2026-0001.json</a></li>
+    </ul>
+</section>
+<section>
+    <h2>JSON 保單查詢</h2>
+    <form id="inquiry-form">
+        <label>保單號碼<input name="policyNo" value="P-2026-0001" required></label>
+        <label>查詢人姓名<input name="requesterName" value="王小明"></label>
+        <label>電話<input name="requesterPhone" value="0912345678"></label>
+        <label>Email<input name="requesterEmail" value="wang@example.com"></label>
+        <input name="channel" type="hidden" value="WEB">
+        <button type="submit">查詢</button>
+    </form>
+    <pre id="result">尚未查詢</pre>
+</section>
+<section>
+    <h2>SOAP Web Service</h2>
+    <p>WSDL：<a href="ws/policy?wsdl"><code>/ws/policy?wsdl</code></a></p>
+    <p>Operations：<code>getPolicyStatus</code>、<code>getPolicySummary</code></p>
+</section>
+<script>
+    const form = document.querySelector('#inquiry-form');
+    const result = document.querySelector('#result');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        result.textContent = '查詢中…';
+        const response = await fetch('rest/api/policies/inquiry', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        });
+        result.textContent = JSON.stringify(await response.json(), null, 2);
+    });
+</script>
+</body>
+</html>

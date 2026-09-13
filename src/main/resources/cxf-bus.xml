@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+       xmlns:jaxws="http://cxf.apache.org/jaxws"
+       xmlns:cxf="http://cxf.apache.org/core"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+           http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+           http://cxf.apache.org/jaxws http://cxf.apache.org/schemas/jaxws.xsd
+           http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml"/>
+    <import resource="classpath:META-INF/cxf/cxf-servlet.xml"/>
+
+    <!-- Interceptors -->
+    <bean id="auditRequestInterceptor" class="com.example.cxfdemo.interceptor.AuditRequestInterceptor"/>
+    <bean id="auditResponseInterceptor" class="com.example.cxfdemo.interceptor.AuditResponseInterceptor"/>
+    <bean id="auditFaultInterceptor" class="com.example.cxfdemo.interceptor.AuditFaultInterceptor"/>
+
+    <cxf:bus>
+        <cxf:inInterceptors>
+            <ref bean="auditRequestInterceptor"/>
+        </cxf:inInterceptors>
+        <cxf:outInterceptors>
+            <ref bean="auditResponseInterceptor"/>
+        </cxf:outInterceptors>
+        <cxf:outFaultInterceptors>
+            <ref bean="auditFaultInterceptor"/>
+        </cxf:outFaultInterceptors>
+        <cxf:inFaultInterceptors>
+            <ref bean="auditFaultInterceptor"/>
+        </cxf:inFaultInterceptors>
+    </cxf:bus>
+
+    <!-- JSON Provider -->
+    <bean id="gsonProvider" class="com.example.cxfdemo.provider.GsonProvider"/>
+
+    <!-- JAX-RS REST Endpoints -->
+    <jaxrs:server id="restContainer" address="/">
+        <jaxrs:serviceBeans>
+            <ref bean="policyResource"/>
+            <ref bean="fileUploadResource"/>
+        </jaxrs:serviceBeans>
+        <jaxrs:providers>
+            <ref bean="gsonProvider"/>
+            <ref bean="unifiedExceptionMapper"/>
+        </jaxrs:providers>
+    </jaxrs:server>
+
+    <!-- JAX-WS SOAP Endpoints -->
+    <jaxws:endpoint id="policySoapEndpoint" implementor="#policyInquiryPortImpl" address="/soap/policies"/>
+
+</beans>
