@@ -11,7 +11,9 @@ import java.sql.ResultSet;
 import java.util.Properties;
 
 /**
- * 客製??PropertyPlaceholderConfigurer，在 Spring ?��??��? DB 載入設�??? * 讓�???Bean ?�能使用 ${xxx} ?�值�??��?也�?設�??�步�?GlobalConfig?? */
+ * 客製化 PropertyPlaceholderConfigurer，在 Spring 啟動時先從 DB 載入設定。
+ * 讓後續 Bean 均能使用 ${xxx} 取值，同時也將設定同步至 GlobalConfig。
+ */
 public class DatabasePropertyPlaceholderConfigurer extends PropertyPlaceholderConfigurer {
 
     public DatabasePropertyPlaceholderConfigurer() {

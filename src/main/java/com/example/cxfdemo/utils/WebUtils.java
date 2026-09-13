@@ -24,7 +24,7 @@ public class WebUtils {
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        // 如�??��?級代?��??�第一?�IP?��?實IP
+        // 如果有多級代理，取第一個IP為真實IP
         if (ip != null && ip.indexOf(',') != -1) {
             ip = ip.substring(0, ip.indexOf(',')).trim();
         }

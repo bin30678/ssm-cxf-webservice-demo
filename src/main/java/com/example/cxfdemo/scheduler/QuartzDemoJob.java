@@ -11,6 +11,6 @@ public class QuartzDemoJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
         System.out.println("=== [Quartz Job] Triggered at: " + new Date() + " ===");
-        // 實�??�業?�輯
+        // 實作商業邏輯
     }
 }

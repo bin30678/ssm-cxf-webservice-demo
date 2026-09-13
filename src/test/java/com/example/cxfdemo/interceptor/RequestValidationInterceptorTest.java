@@ -30,7 +30,7 @@ public class RequestValidationInterceptorTest {
 
         interceptor.handleMessage(message);
 
-        // ?�設�?START_NANOS_KEY ??TRACE_ID_KEY
+        // 應設定 START_NANOS_KEY 與 TRACE_ID_KEY
         Assert.assertNotNull(message.getExchange().get(RequestValidationInterceptor.START_NANOS_KEY));
         Assert.assertNotNull(message.getExchange().get(RequestValidationInterceptor.TRACE_ID_KEY));
     }

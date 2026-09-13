@@ -16,20 +16,20 @@ import java.util.Map;
 @Repository
 public class DemoImpDao {
 
-    // 2. SqlSessionTemplate ?��?
+    // 2. SqlSessionTemplate 方式
     @Resource(name = "sqlSessionTemplate2")
     private SqlSessionTemplate sqlSessionTemplate2;
 
-    // 3. JdbcTemplate ?��?
+    // 3. JdbcTemplate 方式
     @Resource(name = "jdbcTemplate2")
     private JdbcTemplate jdbcTemplate2;
 
-    // 4. Pure JDBC ?��? (?�接?��? DataSource ??Connection)
+    // 4. Pure JDBC 方式 (直接取得 DataSource 的 Connection)
     @Resource(name = "dataSource2")
     private DataSource dataSource2;
 
     public List<Map<String, Object>> queryUsingSqlSessionTemplate() {
-        // 對�? mapper xml 中�? namespace.id = DemoMapper2.selectAll
+        // 對應 mapper xml 中的 namespace.id = DemoMapper2.selectAll
         return sqlSessionTemplate2.selectList("DemoMapper2.selectAll");
     }
 

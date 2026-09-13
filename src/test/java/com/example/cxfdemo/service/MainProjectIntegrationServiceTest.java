@@ -13,7 +13,8 @@ public class MainProjectIntegrationServiceTest {
     @Test
     public void testExecuteExternalLibraries_withNullConnection_shouldReturnSafely() {
         MainProjectIntegrationService service = new MainProjectIntegrationService();
-        // ?�設??JNDI ?��??��??????null，�??��??��?�?        service.executeExternalLibraries(null);
+        // 預設若 JNDI 查找失敗取得 null，應安全返回
+        service.executeExternalLibraries(null);
     }
 
     @Test
@@ -34,7 +35,7 @@ public class MainProjectIntegrationServiceTest {
 
         service.executeExternalLibraries(mockConn);
 
-        // 驗�?交�?管�??�主專�??�管
+        // 驗證交易管理由主專案控管
         Mockito.verify(mockConn, Mockito.times(1)).setAutoCommit(false);
         Mockito.verify(mockLibAService, Mockito.times(1)).getActiveCustomers(mockConn);
         Mockito.verify(mockLibBDao, Mockito.times(1)).queryInactiveCustomerCount(mockConn);
@@ -58,7 +59,7 @@ public class MainProjectIntegrationServiceTest {
 
         service.executeExternalLibraries(mockConn);
 
-        // 驗�??��??�常?�主專�?負責 rollback �?close
+        // 驗證拋出異常由主專案負責 rollback 與 close
         Mockito.verify(mockConn, Mockito.times(1)).rollback();
         Mockito.verify(mockConn, Mockito.times(1)).close();
     }

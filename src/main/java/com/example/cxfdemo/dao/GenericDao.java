@@ -10,15 +10,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * ?�統使用 InitialContext ?��? lookup DataSource 並�?�?Connection ??Utils
- * ?��?: GenericDao.getConnection1()
+ * 傳統使用 InitialContext 進行 lookup DataSource 並取得 Connection 的 Utils
+ * 例如: GenericDao.getConnection1()
  */
 public class GenericDao {
 
     private static final Logger log = LoggerFactory.getLogger(GenericDao.class);
 
     private GenericDao() {
-        // 私�?建�?子�??�止�?new
+        // 私有建構子，防止被 new
     }
 
     public static Connection getConnection1() {

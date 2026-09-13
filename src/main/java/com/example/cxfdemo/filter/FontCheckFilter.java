@@ -14,7 +14,7 @@ public class FontCheckFilter implements Filter {
     public void init(FilterConfig filterConfig) throws ServletException {
         targetFont = filterConfig.getInitParameter("targetFont");
         if (targetFont == null || targetFont.trim().isEmpty()) {
-            targetFont = "Arial"; // ?�設檢查 Arial
+            targetFont = "Arial"; // 預設檢查 Arial
         }
 
         String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();

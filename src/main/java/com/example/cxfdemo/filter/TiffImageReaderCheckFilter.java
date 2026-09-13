@@ -11,7 +11,7 @@ public class TiffImageReaderCheckFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // 系統?��??�檢?�是?��?裝�? TIFF Reader
+        // 系統啟動時檢查是否安裝有 TIFF Reader
         Iterator<javax.imageio.ImageReader> readers = ImageIO.getImageReadersByFormatName("tiff");
         if (readers != null && readers.hasNext()) {
             hasTiffReader = true;

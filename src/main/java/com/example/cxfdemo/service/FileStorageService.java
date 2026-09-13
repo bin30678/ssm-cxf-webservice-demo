@@ -52,7 +52,7 @@ public class FileStorageService implements InitializingBean {
         String storedName = UUID.randomUUID() + "-" + safeName;
         Path target = storageRoot.resolve(storedName).normalize();
         if (!target.startsWith(storageRoot)) {
-            throw new IllegalArgumentException("不�?法�?檔�?路�?");
+            throw new IllegalArgumentException("不合法的檔案路徑");
         }
 
         long size = 0;
@@ -63,7 +63,7 @@ public class FileStorageService implements InitializingBean {
             while ((read = input.read(buffer)) != -1) {
                 size += read;
                 if (size > maxBytes) {
-                    throw new IllegalArgumentException("檔�?不可超�? " + maxBytes + " bytes");
+                    throw new IllegalArgumentException("檔案不可超過 " + maxBytes + " bytes");
                 }
                 output.write(buffer, 0, read);
             }

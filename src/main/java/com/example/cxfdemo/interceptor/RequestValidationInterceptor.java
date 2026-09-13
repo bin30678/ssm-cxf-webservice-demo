@@ -53,8 +53,8 @@ public class RequestValidationInterceptor extends AbstractPhaseInterceptor<Messa
         if (!allowed) {
             ServiceFaultException exception = new ServiceFaultException(
                     "UNSUPPORTED_MEDIA_TYPE",
-                    soap ? "SOAP ?�接??text/xml ??application/soap+xml"
-                            : "REST ?�接??application/json",
+                    soap ? "SOAP 僅接受 text/xml 或 application/soap+xml"
+                            : "REST 僅接受 application/json",
                     415);
             Fault fault = new Fault(exception);
             fault.setStatusCode(415);

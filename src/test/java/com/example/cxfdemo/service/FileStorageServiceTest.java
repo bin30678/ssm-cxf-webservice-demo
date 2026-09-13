@@ -23,7 +23,7 @@ public class FileStorageServiceTest {
     @Before
     public void setUp() throws IOException {
         tempDir = Files.createTempDirectory("test_upload_dir_");
-        // 設�??��?100 bytes
+        // 設定上限 100 bytes
         fileStorageService = new FileStorageService(tempDir.toString(), 100L);
     }
 
@@ -51,9 +51,10 @@ public class FileStorageServiceTest {
         Assert.assertEquals("Test description", record.getDescription());
         Assert.assertNotNull(record.getCreatedAt());
 
-        // 檔�??��?字�??�該被�?�?        Assert.assertTrue(record.getStoredName().contains("my_test_file___.txt"));
+        // 檔名特殊字元應該被替換
+        Assert.assertTrue(record.getStoredName().contains("my_test_file___.txt"));
 
-        // 檢查檔�??�否?�實寫入?��?
+        // 檢查檔案是否確實寫入磁碟
         Path storedFile = tempDir.resolve(record.getStoredName());
         Assert.assertTrue(Files.exists(storedFile));
         Assert.assertEquals(content.length, Files.size(storedFile));
@@ -61,14 +62,14 @@ public class FileStorageServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testStore_exceedMaxSize_shouldThrowExceptionAndCleanUp() throws IOException {
-        // 超�? 100 bytes (120 bytes)
+        // 超過 100 bytes (120 bytes)
         byte[] content = new byte[120];
         InputStream input = new ByteArrayInputStream(content);
 
         try {
             fileStorageService.store(input, "large_file.bin", "application/octet-stream", "Too large");
         } finally {
-            // 驗�?沒�?殘�??��??��?檔�?
+            // 驗證沒有殘留的暫存檔案
             long fileCount = Files.list(tempDir).count();
             Assert.assertEquals(0, fileCount);
         }
@@ -81,7 +82,7 @@ public class FileStorageServiceTest {
 
         FileUploadRecord record = fileStorageService.store(input, "../../evil_script.sh", "text/x-shellscript", "Security check");
 
-        // 路�??��?符�??�被清除，只?��?檔�??��?並替?��?安全字�?
+        // 路徑遍歷符號應被清除，只保留檔名本體並替換為安全字元
         Assert.assertFalse(record.getStoredName().contains(".."));
         Assert.assertTrue(record.getStoredName().contains("evil_script.sh"));
     }

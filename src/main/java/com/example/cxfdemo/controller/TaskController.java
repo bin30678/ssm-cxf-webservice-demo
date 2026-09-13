@@ -13,9 +13,13 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 /**
- * 任�?管�? REST ?�制??(?��??�網?�觸發?��?工�?)
+ * 任務管理 REST 控制器 (手動打網址觸發排程工作)
  * 
- * ?�註�? * 1. ?��?案使??Spring 3.2.14.RELEASE，�??��? @RestController 註解 (Spring 4.0 引入)?? *    ??Spring 3.2 中�?類別?��? @Controller ??@ResponseBody ?��??��??�於 @RestController?? * 2. ?��? produces = "application/json;charset=UTF-8" ?��? Gson 序�??��?確�??�內網�??�無 Jackson ?��?下亦?�穩定�?作�??�錯?? */
+ * 備註：
+ * 1. 本專案使用 Spring 3.2.14.RELEASE，尚未有 @RestController 註解 (Spring 4.0 引入)。
+ *    在 Spring 3.2 中，類別加上 @Controller 與 @ResponseBody 即完全等價於 @RestController。
+ * 2. 透過 produces = "application/json;charset=UTF-8" 搭配 Gson 序列化，確保在內網舊版無 Jackson 環境下亦能穩定運作不報錯。
+ */
 @Controller
 public class TaskController {
 
@@ -28,14 +32,16 @@ public class TaskController {
             .create();
 
     /**
-     * ?��??�網?�觸發?��??��??��?份�?案�?     * ?�援 GET / POST ?�叫
+     * 手動打網址觸發「清理過期備份檔案」
+     * 支援 GET / POST 呼叫
      * 
-     * 範�?網�?�?     * http://localhost:8080/tasks/clean-backup
+     * 範例網址：
+     * http://localhost:8080/tasks/clean-backup
      * http://localhost:8080/tasks/clean-backup?dir=C:/backup_folder&days=7
      * 
-     * @param dir ?��??�份路�? (?�填，�?�?C:/backup_folder)
-     * @param days 保�?天數 (?�填，�?�?7 �?
-     * @return JSON ?��??��?結�?
+     * @param dir 自訂備份路徑 (選填，預設 C:/backup_folder)
+     * @param days 保留天數 (選填，預設 7 天)
+     * @return JSON 格式執行結果
      */
     @RequestMapping(
             value = {"/tasks/clean-backup", "/tasks/cleanBackup", "/api/tasks/clean-backup"},

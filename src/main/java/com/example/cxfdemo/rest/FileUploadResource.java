@@ -33,7 +33,7 @@ public class FileUploadResource {
         if (fileAttachment == null) {
             Map<String, String> error = new HashMap<>();
             error.put("status", "BAD_REQUEST");
-            error.put("message", "缺�? file 欄�?");
+            error.put("message", "缺少 file 欄位");
             return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
         }
 
@@ -55,7 +55,7 @@ public class FileUploadResource {
         } catch (Exception ex) {
             Map<String, String> error = new HashMap<>();
             error.put("status", "FAILED");
-            error.put("message", ex.getMessage() != null ? ex.getMessage() : "檔�?上傳失�?");
+            error.put("message", ex.getMessage() != null ? ex.getMessage() : "檔案上傳失敗");
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(error).build();
         }
     }

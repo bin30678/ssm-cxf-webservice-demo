@@ -31,7 +31,7 @@ public class RestTemplateUtils {
     @PostConstruct
     public void init() {
         try {
-            // ?��??�?��?證�? TrustStrategy
+            // 信任所有憑證的 TrustStrategy
             TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
                 @Override
                 public boolean isTrusted(X509Certificate[] chain, String authType) {
@@ -56,13 +56,13 @@ public class RestTemplateUtils {
 
         } catch (Exception e) {
             e.printStackTrace();
-            // 如�?失�?，退?��?設�? RestTemplate
+            // 如果失敗，退回預設的 RestTemplate
             restTemplate = new RestTemplate();
         }
     }
 
     /**
-     * ?��?POST 請�?並�?紀?�寫??DB
+     * 發送 POST 請求並將紀錄寫入 DB
      */
     public String postWithLog(String url, String requestBody, HttpHeaders headers) {
         String responseBody = null;
@@ -85,7 +85,7 @@ public class RestTemplateUtils {
     }
 
     /**
-     * ?��?GET 請�?並�?紀?�寫??DB
+     * 發送 GET 請求並將紀錄寫入 DB
      */
     public String getWithLog(String url) {
         String responseBody = null;

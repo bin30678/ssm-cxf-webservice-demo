@@ -31,7 +31,7 @@ public class UnifiedFaultInterceptor extends AbstractPhaseInterceptor<Message> {
         Exception original = message.getContent(Exception.class);
         ServiceFaultException serviceFault = findCause(original, ServiceFaultException.class);
         String code = serviceFault == null ? "INTERNAL_ERROR" : serviceFault.getCode();
-        String safeMessage = serviceFault == null ? "?��??��?失�?" : serviceFault.getMessage();
+        String safeMessage = serviceFault == null ? "服務處理失敗" : serviceFault.getMessage();
         int status = serviceFault == null ? 500 : serviceFault.getHttpStatus();
         QName faultCode = status >= 500 ? Fault.FAULT_CODE_SERVER : Fault.FAULT_CODE_CLIENT;
 

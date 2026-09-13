@@ -14,7 +14,7 @@ import java.io.IOException;
 public class ExternalApiService {
 
     /**
-     * 模擬?��?�?API
+     * 模擬呼叫外部 API
      */
     public String callExternalApi() {
         String url = "https://jsonplaceholder.typicode.com/posts/1";

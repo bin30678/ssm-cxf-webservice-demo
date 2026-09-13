@@ -12,11 +12,11 @@ import java.util.List;
 @Service
 public class MainProjectIntegrationService {
 
-    // 外部 JAR A：�? Service + DAO 層�?注入它�? Service
+    // 外部 JAR A：有 Service + DAO 層，注入它的 Service
     @Resource(name = "legacyAS400Service")
     private LegacyAS400Service libAService;
 
-    // 外部 JAR B：�? DAO，�???Service 層�??�接注入 DAO
+    // 外部 JAR B：僅有 DAO，無 Service 層，直接注入 DAO
     @Resource(name = "anotherLegacyDao")
     private AnotherLegacyDao libBDao;
 
@@ -29,14 +29,15 @@ public class MainProjectIntegrationService {
     }
 
     /**
-     * 示�?如�??�主專�??�管 Connection，並?�叫多個�???JAR
+     * 示範如何由主專案控管 Connection，並呼叫多個外部 JAR
      */
     public void executeExternalLibraries() {
         executeExternalLibraries(GenericDao.getConnection2());
     }
 
     /**
-     * ?��??��??��?，方便傳??Connection ?��?測試?�特定�?境使??     */
+     * 多載方法，方便傳入 Connection 進行測試或特定環境使用
+     */
     public void executeExternalLibraries(Connection conn) {
         if (conn == null) {
             System.out.println("Failed to get AS400 Connection (Connection is null)");
@@ -46,13 +47,13 @@ public class MainProjectIntegrationService {
         try {
             conn.setAutoCommit(false);
 
-            // 1. ?�叫外部 JAR A (??Service 層�??��? Service ?��?)
+            // 1. 呼叫外部 JAR A (有 Service 層，調用 Service 方法)
             if (libAService != null) {
                 List<String> activeCustomers = libAService.getActiveCustomers(conn);
                 System.out.println("Active customers from Lib A (Service+DAO): " + activeCustomers);
             }
 
-            // 2. ?�叫外部 JAR B (�?DAO，主專�??�接?�叫 DAO ?��?)
+            // 2. 呼叫外部 JAR B (僅 DAO，主專案直接呼叫 DAO 方法)
             if (libBDao != null) {
                 int inactiveCount = libBDao.queryInactiveCustomerCount(conn);
                 System.out.println("Inactive customer count from Lib B (DAO only): " + inactiveCount);

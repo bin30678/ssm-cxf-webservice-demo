@@ -18,16 +18,17 @@ public class FilterTest {
         TiffImageReaderCheckFilter filter = new TiffImageReaderCheckFilter();
         FilterConfig mockConfig = Mockito.mock(FilterConfig.class);
 
-        // ?��???        filter.init(mockConfig);
+        // 初始化
+        filter.init(mockConfig);
 
         ServletRequest request = Mockito.mock(ServletRequest.class);
         ServletResponse response = Mockito.mock(ServletResponse.class);
         FilterChain chain = Mockito.mock(FilterChain.class);
 
-        // ?��? doFilter
+        // 執行 doFilter
         filter.doFilter(request, response, chain);
 
-        // 驗�??�否?�呼?��?續�? filterChain
+        // 驗證是否呼叫後續的 filterChain
         Mockito.verify(chain, Mockito.times(1)).doFilter(request, response);
 
         filter.destroy();

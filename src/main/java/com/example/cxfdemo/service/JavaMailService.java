@@ -17,19 +17,20 @@ public class JavaMailService {
     private JavaMailSender mailSender;
 
     /**
-     * 寄�?Email (?�援?�件?�CC)
+     * 寄送 Email (支援附件與 CC)
      *
-     * @param from 寄件�?     * @param to ?�件�?(多�?)
-     * @param cc ?�本 (多�?)
+     * @param from 寄件者
+     * @param to 收件者 (多個)
+     * @param cc 副本 (多個)
      * @param subject 主旨
-     * @param body ?��? (?�為 HTML)
-     * @param attachmentPaths ?�件檔�?路�?清單
+     * @param body 內容 (可為 HTML)
+     * @param attachmentPaths 附件檔案路徑清單
      */
     public void sendMail(String from, List<String> to, List<String> cc, String subject, String body, List<String> attachmentPaths) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             
-            // true 表示?�許多部??(Multipart)，支?��?件�? HTML
+            // true 表示為許多部分 (Multipart)，支援附件與 HTML
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
             helper.setFrom(from);

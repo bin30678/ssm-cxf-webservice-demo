@@ -1,15 +1,15 @@
 package com.example.cxfdemo.config;
 
 /**
- * ?��??��??�數類別
- * ?��? Spring ??MethodInvokingFactoryBean 來�???DB ?�出來�? ${...} 設�?
+ * 全域靜態變數類別
+ * 透過 Spring 的 MethodInvokingFactoryBean 來接收從 DB 查出來的 ${...} 設定
  */
 public class GlobalConfig {
 
     private static String url;
 
     /**
-     * �?Spring MethodInvokingFactoryBean ?�叫??Static Setter
+     * 由 Spring MethodInvokingFactoryBean 呼叫的 Static Setter
      */
     public static void setUrl(String url) {
         GlobalConfig.url = url;
