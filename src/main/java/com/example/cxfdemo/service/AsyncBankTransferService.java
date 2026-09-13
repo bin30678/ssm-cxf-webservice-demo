@@ -1,17 +1,27 @@
 package com.example.cxfdemo.service;
 
+import com.example.cxfdemo.dao.TransferTaskDao;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.UUID;
 
 @Service
 public class AsyncBankTransferService {
 
+    @Resource
+    private TransferTaskDao transferTaskDao;
+
+    public void setTransferTaskDao(TransferTaskDao transferTaskDao) {
+        this.transferTaskDao = transferTaskDao;
+    }
+
     /**
      * 模擬被外部 API 觸發非同步轉帳任務
+     * @return taskId
      */
-    public void startAsyncTransferTask() {
+    public String startAsyncTransferTask() {
         final String taskId = UUID.randomUUID().toString();
         
         // 1. 建立主表紀錄 (初始狀態 0: 待處理)
@@ -76,15 +86,17 @@ public class AsyncBankTransferService {
                 }
             }
         }).start();
+
+        return taskId;
     }
 
     // ==========================================
-    // 以下為模擬各個步驟與資料庫操作 (使用 Console 模擬)
+    // 以下為各個步驟與資料庫操作
     // ==========================================
     
     private String fetchExternalData() throws Exception {
         // 模擬偶爾失敗 (例如模擬網路逾時)
-        if (Math.random() < 0.5) throw new Exception("外部系統連線 Timeout");
+        if (Math.random() < 0.3) throw new Exception("外部系統連線 Timeout");
         return "{ \"data\": \"raw\" }";
     }
 
@@ -93,25 +105,44 @@ public class AsyncBankTransferService {
     }
 
     private String transformToBankFormat(String json) throws Exception {
-        if (Math.random() < 0.2) throw new Exception("資料欄位檢核失敗，無法轉換");
+        if (Math.random() < 0.1) throw new Exception("資料欄位檢核失敗，無法轉換");
         return "<bank>formatted</bank>";
     }
 
     private void sendToBank(String data) throws Exception {
-        if (Math.random() < 0.3) throw new Exception("銀行端主機忙線中");
+        if (Math.random() < 0.1) throw new Exception("銀行端主機忙線中");
+    }
+
+    private String getStatusDesc(int status) {
+        switch (status) {
+            case 0: return "待處理";
+            case 1: return "已取得外部資料";
+            case 2: return "JSON處理完成";
+            case 3: return "格式轉換完成";
+            case 4: return "發送銀行成功";
+            case 99: return "失敗終止";
+            default: return "處理中(" + status + ")";
+        }
     }
 
     private void insertMasterRecord(String taskId, int status) {
-        // 實務上用 DAO: INSERT INTO master_table (task_id, status) VALUES (...)
+        if (transferTaskDao != null) {
+            transferTaskDao.insertMaster(taskId, status, getStatusDesc(status));
+        }
+        System.out.println("[DB] 主表已建立 -> Task ID: " + taskId + ", 狀態: " + status + " (" + getStatusDesc(status) + ")");
     }
 
     private void updateMasterStatus(String taskId, int status) {
-        // 實務上用 DAO: UPDATE master_table SET status = ? WHERE task_id = ?
-        System.out.println("[DB] 主表狀態更新為: " + status);
+        if (transferTaskDao != null) {
+            transferTaskDao.updateMasterStatus(taskId, status, getStatusDesc(status));
+        }
+        System.out.println("[DB] 主表狀態更新為: " + status + " (" + getStatusDesc(status) + ")");
     }
 
     private void insertDetailRecord(String taskId, int type, String message, boolean isSuccess) {
-        // 實務上用 DAO: INSERT INTO detail_table (task_id, type, message, success, create_time)
+        if (transferTaskDao != null) {
+            transferTaskDao.insertDetail(taskId, type, message, isSuccess);
+        }
         System.out.println("[DB] 寫入子表 -> 步驟: " + type + ", 成功: " + isSuccess + ", 訊息: " + message);
     }
 }

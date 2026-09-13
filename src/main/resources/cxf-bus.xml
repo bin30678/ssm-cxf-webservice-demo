@@ -14,9 +14,15 @@
     <import resource="classpath:META-INF/cxf/cxf-servlet.xml"/>
 
     <!-- Interceptors -->
-    <bean id="auditRequestInterceptor" class="com.example.cxfdemo.interceptor.AuditRequestInterceptor"/>
-    <bean id="auditResponseInterceptor" class="com.example.cxfdemo.interceptor.AuditResponseInterceptor"/>
-    <bean id="auditFaultInterceptor" class="com.example.cxfdemo.interceptor.AuditFaultInterceptor"/>
+    <bean id="auditRequestInterceptor" class="com.example.cxfdemo.interceptor.AuditRequestInterceptor">
+        <property name="auditLogDao" ref="auditLogDao"/>
+    </bean>
+    <bean id="auditResponseInterceptor" class="com.example.cxfdemo.interceptor.AuditResponseInterceptor">
+        <property name="auditLogDao" ref="auditLogDao"/>
+    </bean>
+    <bean id="auditFaultInterceptor" class="com.example.cxfdemo.interceptor.AuditFaultInterceptor">
+        <property name="auditLogDao" ref="auditLogDao"/>
+    </bean>
 
     <cxf:bus>
         <cxf:inInterceptors>

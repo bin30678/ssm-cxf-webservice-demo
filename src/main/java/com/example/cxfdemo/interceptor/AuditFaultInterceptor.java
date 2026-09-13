@@ -11,12 +11,34 @@ import java.util.Date;
 
 import javax.annotation.Resource;
 
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
+
 public class AuditFaultInterceptor extends AbstractPhaseInterceptor<Message> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditFaultInterceptor.class);
 
     @Resource
     private com.example.cxfdemo.dao.AuditLogDao auditLogDao;
+
+    public void setAuditLogDao(com.example.cxfdemo.dao.AuditLogDao auditLogDao) {
+        this.auditLogDao = auditLogDao;
+    }
+
+    private com.example.cxfdemo.dao.AuditLogDao getEffectiveDao() {
+        if (this.auditLogDao != null) {
+            return this.auditLogDao;
+        }
+        try {
+            WebApplicationContext ctx = ContextLoader.getCurrentWebApplicationContext();
+            if (ctx != null) {
+                this.auditLogDao = ctx.getBean(com.example.cxfdemo.dao.AuditLogDao.class);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get AuditLogDao from Spring context: {}", e.getMessage());
+        }
+        return this.auditLogDao;
+    }
 
     public AuditFaultInterceptor() {
         super(Phase.MARSHAL);
@@ -38,10 +60,11 @@ public class AuditFaultInterceptor extends AbstractPhaseInterceptor<Message> {
         log.error("Error: {}", errorMsg);
         log.error("=====================");
         
-        if (auditLogDao != null) {
-            auditLogDao.insertFaultLog(guid, errorMsg);
+        com.example.cxfdemo.dao.AuditLogDao dao = getEffectiveDao();
+        if (dao != null) {
+            dao.insertFaultLog(guid, errorMsg);
         } else {
-            log.warn("AuditLogDao is not injected!");
+            log.warn("AuditLogDao is not injected or found!");
         }
     }
 }

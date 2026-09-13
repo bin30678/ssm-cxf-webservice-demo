@@ -37,4 +37,15 @@
         SELECT id, original_name, stored_name, content_type, size_bytes, description, created_at
         FROM file_upload_record ORDER BY id DESC LIMIT 50
     </select>
+
+    <insert id="insertPolicy" parameterType="com.example.cxfdemo.model.PolicyInfo">
+        INSERT INTO policy_info (policy_no, holder_name, product_name, status)
+        VALUES (#{policyNo}, #{holderName}, #{productName}, #{status})
+    </insert>
+
+    <update id="updatePolicy" parameterType="com.example.cxfdemo.model.PolicyInfo">
+        UPDATE policy_info
+        SET holder_name = #{holderName}, product_name = #{productName}, status = #{status}
+        WHERE policy_no = #{policyNo}
+    </update>
 </mapper>

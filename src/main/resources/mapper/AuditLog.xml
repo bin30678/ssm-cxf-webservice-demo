@@ -4,18 +4,21 @@
 <mapper namespace="AuditLog">
 
     <insert id="insertRequestLog" parameterType="map">
-        INSERT INTO audit_request (guid, client_ip, client_type, hostname, request_uri, request_method)
-        VALUES (#{guid}, #{ip}, #{clientType}, #{hostname}, #{uri}, #{method})
+        INSERT INTO audit_request (guid, client_ip, client_type, hostname, request_uri, request_method, payload)
+        VALUES (#{guid}, #{ip}, #{clientType}, #{hostname}, #{uri}, #{method}, #{payload})
+        ON DUPLICATE KEY UPDATE client_ip = VALUES(client_ip), request_uri = VALUES(request_uri), payload = VALUES(payload)
     </insert>
 
     <insert id="insertResponseLog" parameterType="map">
-        INSERT INTO audit_response (guid, response_code)
-        VALUES (#{guid}, #{responseCode})
+        INSERT INTO audit_response (guid, response_code, payload)
+        VALUES (#{guid}, #{responseCode}, #{payload})
+        ON DUPLICATE KEY UPDATE response_code = VALUES(response_code), payload = VALUES(payload)
     </insert>
 
     <insert id="insertFaultLog" parameterType="map">
         INSERT INTO audit_fault (guid, error_msg)
         VALUES (#{guid}, #{errorMsg})
+        ON DUPLICATE KEY UPDATE error_msg = VALUES(error_msg)
     </insert>
 
 </mapper>

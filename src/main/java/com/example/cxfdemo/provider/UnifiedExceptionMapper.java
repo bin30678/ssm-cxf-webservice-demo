@@ -12,11 +12,18 @@ import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.jaxrs.utils.JAXRSUtils;
 import org.springframework.stereotype.Component;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 @Provider
 public class UnifiedExceptionMapper implements ExceptionMapper<Throwable> {
+
+    private static final Logger log = LoggerFactory.getLogger(UnifiedExceptionMapper.class);
+
     @Override
     public Response toResponse(Throwable throwable) {
+        log.error("UnifiedExceptionMapper caught unhandled exception: " + throwable.getMessage(), throwable);
         ServiceFaultException serviceFault = findCause(throwable, ServiceFaultException.class);
         int status;
         String code;

@@ -18,7 +18,7 @@ public interface PolicyResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    Response createPolicy(String payload);
+    Response createPolicy(com.example.cxfdemo.model.PolicyInfo policy);
 
     @GET
     @Path("/test-async-bank")

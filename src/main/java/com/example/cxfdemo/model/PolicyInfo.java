@@ -12,6 +12,15 @@ public class PolicyInfo {
     private String productName;
     private String status;
 
+    public PolicyInfo() {}
+
+    public PolicyInfo(String policyNo, String holderName, String productName, String status) {
+        this.policyNo = policyNo;
+        this.holderName = holderName;
+        this.productName = productName;
+        this.status = status;
+    }
+
     public String getPolicyNo() { return policyNo; }
     public void setPolicyNo(String policyNo) { this.policyNo = policyNo; }
     public String getHolderName() { return holderName; }

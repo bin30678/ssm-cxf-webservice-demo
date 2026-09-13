@@ -9,4 +9,6 @@ public interface DemoMapper {
     List<PolicyInfo> findPolicies();
     int insertUpload(FileUploadRecord record);
     List<FileUploadRecord> findLatestUploads();
+    int insertPolicy(PolicyInfo policy);
+    int updatePolicy(PolicyInfo policy);
 }

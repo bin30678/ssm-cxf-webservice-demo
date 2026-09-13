@@ -26,4 +26,12 @@ public class PolicyService {
     public List<PolicyInfo> findAll() {
         return mapper.findPolicies();
     }
+
+    public int createPolicy(PolicyInfo policy) {
+        return mapper.insertPolicy(policy);
+    }
+
+    public int updatePolicy(PolicyInfo policy) {
+        return mapper.updatePolicy(policy);
+    }
 }

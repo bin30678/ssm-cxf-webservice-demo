@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TransferTask">
+
+    <insert id="insertMaster" parameterType="map">
+        INSERT INTO transfer_task (task_id, status, status_desc, created_at, updated_at)
+        VALUES (#{taskId}, #{status}, #{statusDesc}, NOW(), NOW())
+    </insert>
+
+    <update id="updateMasterStatus" parameterType="map">
+        UPDATE transfer_task
+        SET status = #{status}, status_desc = #{statusDesc}, updated_at = NOW()
+        WHERE task_id = #{taskId}
+    </update>
+
+    <insert id="insertDetail" parameterType="map">
+        INSERT INTO transfer_task_detail (task_id, step, message, success, created_at)
+        VALUES (#{taskId}, #{step}, #{message}, #{success}, NOW())
+    </insert>
+
+    <select id="selectMaster" parameterType="string" resultType="map">
+        SELECT task_id, status, status_desc, created_at, updated_at
+        FROM transfer_task
+        WHERE task_id = #{taskId}
+    </select>
+
+    <select id="selectDetails" parameterType="string" resultType="map">
+        SELECT id, task_id, step, message, success, created_at
+        FROM transfer_task_detail
+        WHERE task_id = #{taskId}
+        ORDER BY id ASC
+    </select>
+
+</mapper>

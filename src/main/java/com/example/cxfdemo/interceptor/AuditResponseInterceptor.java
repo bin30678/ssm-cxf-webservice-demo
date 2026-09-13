@@ -17,12 +17,34 @@ import java.util.Date;
 
 import javax.annotation.Resource;
 
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
+
 public class AuditResponseInterceptor extends AbstractPhaseInterceptor<Message> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditResponseInterceptor.class);
 
     @Resource
     private com.example.cxfdemo.dao.AuditLogDao auditLogDao;
+
+    public void setAuditLogDao(com.example.cxfdemo.dao.AuditLogDao auditLogDao) {
+        this.auditLogDao = auditLogDao;
+    }
+
+    public com.example.cxfdemo.dao.AuditLogDao getEffectiveDao() {
+        if (this.auditLogDao != null) {
+            return this.auditLogDao;
+        }
+        try {
+            WebApplicationContext ctx = ContextLoader.getCurrentWebApplicationContext();
+            if (ctx != null) {
+                this.auditLogDao = ctx.getBean(com.example.cxfdemo.dao.AuditLogDao.class);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get AuditLogDao from Spring context: {}", e.getMessage());
+        }
+        return this.auditLogDao;
+    }
 
     public AuditResponseInterceptor() {
         // PRE_STREAM 階段才能攔截底層的 OutputStream
@@ -43,18 +65,19 @@ public class AuditResponseInterceptor extends AbstractPhaseInterceptor<Message> 
         message.setContent(OutputStream.class, newOut);
 
         // 註冊回呼 (Callback)，當 Stream onClose() 時就會觸發
-        newOut.registerCallback(new LoggingCallback(message, os, auditLogDao));
+        newOut.registerCallback(new LoggingCallback(message, os, this));
     }
 
     private static class LoggingCallback implements CachedOutputStreamCallback {
         private final Message message;
         private final OutputStream origStream;
-        private final com.example.cxfdemo.dao.AuditLogDao auditLogDao;
+        private final AuditResponseInterceptor parent;
+        private final java.util.concurrent.atomic.AtomicBoolean hasLogged = new java.util.concurrent.atomic.AtomicBoolean(false);
 
-        public LoggingCallback(Message message, OutputStream origStream, com.example.cxfdemo.dao.AuditLogDao auditLogDao) {
+        public LoggingCallback(Message message, OutputStream origStream, AuditResponseInterceptor parent) {
             this.message = message;
             this.origStream = origStream;
-            this.auditLogDao = auditLogDao;
+            this.parent = parent;
         }
 
         @Override
@@ -64,6 +87,9 @@ public class AuditResponseInterceptor extends AbstractPhaseInterceptor<Message> 
 
         @Override
         public void onClose(CachedOutputStream cos) {
+            if (!hasLogged.compareAndSet(false, true)) {
+                return;
+            }
             try {
                 String guid = null;
                 if (message.getExchange() != null) {
@@ -71,6 +97,9 @@ public class AuditResponseInterceptor extends AbstractPhaseInterceptor<Message> 
                 }
                 
                 Integer responseCode = (Integer) message.get(Message.RESPONSE_CODE);
+                if (responseCode == null) {
+                    responseCode = 200; // 預設成功代碼
+                }
 
                 // 從緩衝區中讀取出實際寫入的 Payload
                 StringBuilder payload = new StringBuilder();
@@ -82,17 +111,19 @@ public class AuditResponseInterceptor extends AbstractPhaseInterceptor<Message> 
                     payload.append("Error reading payload: ").append(e.getMessage());
                 }
 
+                String payloadStr = payload.toString();
                 log.info("=== [Audit Response (onClose)] ===");
                 log.info("GUID: {}", guid);
                 log.info("Time: {}", new Date());
                 log.info("Response Code: {}", responseCode);
-                log.info("Payload: {}", payload.toString());
+                log.info("Payload: {}", payloadStr.length() > 500 ? payloadStr.substring(0, 500) + "..." : payloadStr);
                 log.info("==================================");
                 
-                if (auditLogDao != null) {
-                    auditLogDao.insertResponseLog(guid, responseCode);
+                com.example.cxfdemo.dao.AuditLogDao dao = parent != null ? parent.getEffectiveDao() : null;
+                if (dao != null) {
+                    dao.insertResponseLog(guid, responseCode, payloadStr);
                 } else {
-                    log.warn("AuditLogDao is not injected!");
+                    log.warn("AuditLogDao is not injected or found!");
                 }
 
             } catch (Exception e) {

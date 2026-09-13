@@ -14,4 +14,8 @@
 
     <mvc:annotation-driven/>
 
+    <mvc:interceptors>
+        <bean class="com.example.cxfdemo.interceptor.AuditMvcInterceptor"/>
+    </mvc:interceptors>
+
 </beans>

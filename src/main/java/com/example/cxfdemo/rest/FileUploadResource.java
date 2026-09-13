@@ -23,6 +23,9 @@ public class FileUploadResource {
     @Resource
     private FileStorageService fileStorageService;
 
+    @Resource
+    private com.example.cxfdemo.mapper.DemoMapper demoMapper;
+
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -47,8 +50,13 @@ public class FileUploadResource {
 
             com.example.cxfdemo.model.FileUploadRecord record = fileStorageService.store(is, fileName, contentType, description);
 
-            Map<String, String> result = new HashMap<>();
+            if (demoMapper != null) {
+                demoMapper.insertUpload(record);
+            }
+
+            Map<String, Object> result = new HashMap<>();
             result.put("status", "SUCCESS");
+            result.put("id", record.getId());
             result.put("storedName", record.getStoredName());
             return Response.ok(result).build();
 

@@ -17,6 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.cxf.helpers.IOUtils;
+import org.apache.cxf.io.CachedOutputStream;
+import org.springframework.web.context.ContextLoader;
+import org.springframework.web.context.WebApplicationContext;
+
+import java.io.InputStream;
+
 public class AuditRequestInterceptor extends AbstractPhaseInterceptor<Message> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditRequestInterceptor.class);
@@ -24,6 +31,25 @@ public class AuditRequestInterceptor extends AbstractPhaseInterceptor<Message> {
 
     @Resource
     private com.example.cxfdemo.dao.AuditLogDao auditLogDao;
+
+    public void setAuditLogDao(com.example.cxfdemo.dao.AuditLogDao auditLogDao) {
+        this.auditLogDao = auditLogDao;
+    }
+
+    private com.example.cxfdemo.dao.AuditLogDao getEffectiveDao() {
+        if (this.auditLogDao != null) {
+            return this.auditLogDao;
+        }
+        try {
+            WebApplicationContext ctx = ContextLoader.getCurrentWebApplicationContext();
+            if (ctx != null) {
+                this.auditLogDao = ctx.getBean(com.example.cxfdemo.dao.AuditLogDao.class);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get AuditLogDao from Spring context: {}", e.getMessage());
+        }
+        return this.auditLogDao;
+    }
 
     public AuditRequestInterceptor() {
         super(Phase.RECEIVE);
@@ -54,6 +80,33 @@ public class AuditRequestInterceptor extends AbstractPhaseInterceptor<Message> {
         String uri = (String) message.get(Message.REQUEST_URI);
         String method = (String) message.get(Message.HTTP_REQUEST_METHOD);
 
+        // 讀取並保留 Request Body Payload
+        String payload = null;
+        try {
+            InputStream is = message.getContent(InputStream.class);
+            if (is != null) {
+                CachedOutputStream cos = new CachedOutputStream();
+                IOUtils.copy(is, cos);
+                cos.flush();
+                byte[] bytes = cos.getBytes();
+                if (bytes != null && bytes.length > 0) {
+                    payload = new String(bytes, "UTF-8");
+                }
+                // 重設 InputStream 讓 CXF 框架能繼續讀取
+                message.setContent(InputStream.class, cos.getInputStream());
+                cos.close();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to capture request payload: {}", e.getMessage());
+        }
+
+        if ((payload == null || payload.trim().isEmpty()) && request != null) {
+            String qs = request.getQueryString();
+            if (qs != null && !qs.trim().isEmpty()) {
+                payload = "?" + qs;
+            }
+        }
+
         log.info("=== [Audit Request] ===");
         log.info("GUID: {}", guid);
         log.info("Time: {}", new Date());
@@ -61,12 +114,16 @@ public class AuditRequestInterceptor extends AbstractPhaseInterceptor<Message> {
         log.info("Client Type: {}", clientType);
         log.info("Host: {}", hostname);
         log.info("URI: {} {}", method, uri);
+        if (payload != null) {
+            log.info("Payload: {}", payload.length() > 500 ? payload.substring(0, 500) + "..." : payload);
+        }
         log.info("=======================");
         
-        if (auditLogDao != null) {
-            auditLogDao.insertRequestLog(guid, ip, clientType, hostname, uri, method);
+        com.example.cxfdemo.dao.AuditLogDao dao = getEffectiveDao();
+        if (dao != null) {
+            dao.insertRequestLog(guid, ip, clientType, hostname, uri, method, payload);
         } else {
-            log.warn("AuditLogDao is not injected!");
+            log.warn("AuditLogDao is not injected or found!");
         }
     }
 }

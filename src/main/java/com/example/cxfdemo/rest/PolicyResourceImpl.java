@@ -35,20 +35,38 @@ public class PolicyResourceImpl implements PolicyResource {
     public PolicyResourceImpl() {
     }
 
+    private final com.google.gson.Gson gson = new com.google.gson.Gson();
+
     @Override
     public Response getPolicies() {
         return Response.ok("{\"status\":\"ok\", \"message\":\"CXF REST API is working!\"}").build();
     }
 
     @Override
-    public Response createPolicy(String payload) {
-        return Response.ok("{\"status\":\"created\", \"received\":" + payload + "}").build();
+    public Response createPolicy(PolicyInfo policy) {
+        if (policy == null) {
+            policy = new PolicyInfo("P" + System.currentTimeMillis(), "新保戶", "意外險", "ACTIVE");
+        } else if (policy.getPolicyNo() == null || policy.getPolicyNo().trim().isEmpty()) {
+            policy.setPolicyNo("P" + System.currentTimeMillis());
+        }
+        
+        try {
+            policyService.createPolicy(policy);
+        } catch (Exception e) {
+            // 若主鍵衝突則更新
+            policyService.updatePolicy(policy);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "CREATED");
+        result.put("policy", policy);
+        return Response.ok(result).build();
     }
 
     @Override
     public Response testAsyncBank() {
-        asyncBankTransferService.startAsyncTransferTask();
-        return Response.ok("{\"message\":\"Async bank transfer started in background. Check console!\"}").build();
+        String taskId = asyncBankTransferService.startAsyncTransferTask();
+        return Response.ok("{\"message\":\"Async bank transfer started in background.\", \"taskId\":\"" + taskId + "\"}").build();
     }
 
     @Override
