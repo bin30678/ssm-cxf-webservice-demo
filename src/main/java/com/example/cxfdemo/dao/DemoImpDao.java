@@ -7,6 +7,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import com.example.cxfdemo.utils.GenericDao;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 import java.sql.Connection;

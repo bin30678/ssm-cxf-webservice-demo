@@ -1,6 +1,6 @@
 package com.example.cxfdemo.service;
 
-import com.example.cxfdemo.dao.GenericDao;
+import com.example.cxfdemo.utils.GenericDao;
 import com.external.liba.service.LegacyAS400Service;
 import com.external.libb.dao.AnotherLegacyDao;
 import org.springframework.stereotype.Service;

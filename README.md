@@ -80,9 +80,9 @@ mvn clean test
 ```
 
 ### 測試覆蓋統計
-目前共 **17 個測試類別、52 個測試案例，100% 全數通過**：
+目前共 **17 個測試類別、54 個測試案例，100% 全數通過**：
 * `PolicyDaoEquivalenceTest` (9 tests)：驗證主庫單一暴露、BaseDao 三元件注入、四種存取一致性、事務原子性、四路 JNDI Lookup 與外部 JAR 內部 lookup 隔離。
-* `GenericDaoTest` (4 tests)：驗證 JNDI Lookup 與容錯路徑。
+* `GenericDaoTest` (6 tests)：驗證 JNDI Lookup、容錯路徑、連線關閉與 system_properties 查詢。
 * `RequestValidationInterceptorTest` (5 tests)：驗證 Content-Type 白名單與 StAX/XXE 防護。
 * `UnifiedExceptionMapperTest` (4 tests)：驗證例外統一格式轉換。
 * `PolicyInquiryPortImplTest` (3 tests)：驗證 SOAP WebService 業務操作。

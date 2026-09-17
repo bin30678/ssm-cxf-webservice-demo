@@ -3,6 +3,7 @@ package com.example.cxfdemo.dao;
 import com.example.cxfdemo.model.PolicyInfo;
 import com.example.cxfdemo.service.MainDbOperationsService;
 import com.external.liba.dao.ExternalJarGenericDao;
+import com.example.cxfdemo.utils.GenericDao;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -236,6 +237,10 @@ public class PolicyDaoEquivalenceTest {
         c2.close();
         c3.close();
         c4.close();
+
+        // 驗證 GenericDao.getSystemProperty 透過 getConnection1() 正確查詢主庫 system_properties
+        String propVal = GenericDao.getSystemProperty("system.app.url");
+        assertEquals("http://localhost:8080/cxfdemo", propVal);
 
         // 驗證兩段式子 Context 查找 (lookup("java:comp/env") -> lookup("jdbc/cxfdemo2"))
         Context rootCtx = new InitialContext();
