@@ -4,5 +4,6 @@ uploads/
 *.iml
 .settings/
 logs/
+*.log
 .project
 .classpath

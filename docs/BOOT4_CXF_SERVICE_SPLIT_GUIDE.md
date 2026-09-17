@@ -1,8 +1,14 @@
 # 保留 JAX-RS：拆成 Spring Boot 4.1.1／CXF 4.2.x 服務的設定說明
 
+> 最新：SSM 保留為排程原型，原有 Spring／Quartz trigger 與 `ScheduledTasks` 不修改。[獨立排程專案](../../springboot-scheduler-demo/README.md) 依此原型建立；Boot WebService 的排程入口另行移出，清理業務與手動 API 供後續切換驗證。下方「尚未搬移」為較早規劃記錄。
+
+> 2026-09-15 使用者新增後續需求：定時任務拆成獨立 Spring Boot。實際盤點、分階段工作及驗收見 [排程服務拆分計劃](../../springboot-cxf-webservice-demo/docs/SCHEDULER_SERVICE_SPLIT_PLAN.md)；目前只更新計劃，尚未搬移程式。主 DataSource／BaseDao／四路 JNDI 以 Boot 的 BASEDAO_JNDI_REQUIREMENTS.md 為準，本文舊多 DataSource 範例不能直接套用。
+
 查證日期：2026-09-13。
 
-本文依目前模擬專案與你描述的公司實況整理：入口以 JAX-RS 為主，業務按機構／功能分组；外部 JAR 接收 JDBC Connection 或 AS400 物件。範例保留 JAX-RS。程式區塊是目標配置的示例，須套入實際類別與相依套件；這次未建立、編譯或啟動新的服務，也未更改既有程式。
+本文依目前模擬專案與你描述的公司實況整理：入口以 JAX-RS 為主，業務按機構／功能分組；外部 JAR 接收 JDBC Connection 或 AS400 物件。範例保留 JAX-RS。程式區塊是目標配置的示例，須套入實際類別與相依套件；這次未建立、編譯或啟動新的服務，也未更改既有程式。
+
+閱讀順序：先看第 1～3 節建立概念，再依第 4、6～10 節完成一個服務；需要雙資料來源時看第 11 節，starter 放到第 14 節。程式碼中每個 public 類別各自放一個檔案，部分業務類別省略 import；公司套件名稱與 common 1.0.0 是示例，並非已發布的套件。
 
 ## 1. 先回答共用 JAR 能不能交給 Spring Boot 管理
 
@@ -46,7 +52,7 @@ Starter 本身也是 Maven JAR／dependency。它通常組合「需要的套件�
 | Service 實作類 | 有 @Service 且在掃描範圍，通常夠 | 所依賴的 DAO／client 等必須也有 Bean；多實作時選定要注入哪個 |
 | Service 介面 | 不夠 | 需要具體實作 Bean，介面本身不會自動生出實作 |
 | DAO 實作類 | 有 @Repository 且在掃描範圍，可成為 Bean | 所使用的 SqlSessionTemplate／JdbcTemplate／DataSource 要先配置 |
-| 一般 DAO 介面＋impl | 掃描 impl 可以 | 不要把一般 DAO 介面誤交给 MyBatis 產生代理 |
+| 一般 DAO 介面＋impl | 掃描 impl 可以 | 不要把一般 DAO 介面誤交給 MyBatis 產生代理 |
 | MyBatis Mapper 介面 | 一般 component scan 不夠 | @MapperScan，或符合 MyBatis starter 的 @Mapper 自動掃描條件 |
 | 使用 SqlSessionTemplate 的 DAO | DAO 可以掃描 | 需要對應 SqlSessionFactory、Template、Mapper SQL 資源 |
 | 使用 JdbcTemplate 的 DAO | DAO 可以掃描 | 需要對應 DataSource／JdbcTemplate |
@@ -54,7 +60,7 @@ Starter 本身也是 Maven JAR／dependency。它通常組合「需要的套件�
 | CXF interceptor | 可以成為 Bean | 還要加入 endpoint 或 Bus 的 interceptor list |
 | JAX-RS Resource | @Component／@Service 可使其成為 Bean | JAX-RS @Path 本身不等於 Spring 元件註冊；還要發布到 CXF Server |
 | JAX-RS provider／ExceptionMapper | 可以成為 Bean | 還要加入該 CXF Server 的 providers |
-| Servlet Filter | 可以成為 Bean | 明確路徑、順序、init-param 用 FilterRegistrationBean |
+| Servlet Filter / Listener | 可以成為 Bean | Filter 使用 FilterRegistrationBean，ServletContextListener 可直接宣告為 @Bean 或使用 ServletListenerRegistrationBean |
 | 純 static Utils | 不需要 | dependency 即可；沒有依賴注入、資源生命週期就不必硬做 Bean |
 | 有設定或依賴的工具 | 可以 @Component，或 @Bean | 注入設定／client，必要時設定關閉方法 |
 | VO／DTO | 通常不需要 | 作為資料物件建立、序列化；MyBatis type alias 與 Bean scan 是兩件事 |
@@ -101,7 +107,7 @@ company-integration-common             ← 普通 library JAR
 
 external-lib-a                         ← 既有外部 JAR 升級版
 external-lib-b                         ← 既有外部 JAR 升級版
-~~~ 
+~~~
 
 啟動類放在本服務根 package：
 
@@ -166,7 +172,7 @@ public class BankApiApplication {
 
 Java 21 是這份示例的選擇；Boot 4.1.1 最低要求 Java 17，並要求 Framework 7.0.9 以上。[Boot 系統需求](https://docs.spring.io/spring-boot/system-requirements.html)。
 
-CXF 4.2.3 是本次查到的明確 4.2.x 版本。[CXF 下載頁](https://cxf.apache.org/download.html)、[CXF 4.2.3 starter POM](https://github.com/apache/cxf/blob/cxf-4.2.3/integration/spring-boot/starter-jaxrs/pom.xml)。MyBatis starter 4.0 系列對應 Boot 4；示例使用已发布的 4.0.1，不代表宣稱其為最新版本。[MyBatis 官方 repository](https://github.com/mybatis/spring-boot-starter)、[相容性矩陣](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)。
+CXF 4.2.3 是本次查到的明確 4.2.x 版本。[CXF 下載頁](https://cxf.apache.org/download.html)、[CXF 4.2.3 starter POM](https://github.com/apache/cxf/blob/cxf-4.2.3/integration/spring-boot/starter-jaxrs/pom.xml)。MyBatis starter 4.0 系列對應 Boot 4；示例使用已發布的 4.0.1，不代表宣稱其為最新版本。[MyBatis 官方 repository](https://github.com/mybatis/spring-boot-starter)、[相容性矩陣](https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/)。
 
 以 Boot parent／BOM 管理 Spring 版本，再明確管理 CXF、MyBatis starter、公司 JAR 版本。不要把舊的 Spring 6 或 mybatis-spring 3.0.3 強制覆寫進這套 Boot 4 示例。外部 JAR 是否相容還需檢查其依賴與 API；JAR 能註冊成 Bean 不等於二進位相容性已驗證。
 
@@ -207,6 +213,7 @@ public class PolicyServiceImpl implements PolicyService {
 - 舊 Service 若原本只有 XML bean 定義，類別沒有註解，搬進新服務不會憑名稱自動變 Bean；補 @Service 或用 @Bean。
 - 原本 XML 有 property／constructor-arg 值，仍需改成建構子依賴或配置綁定。
 - 有兩個同介面的實作時，用不同介面分責任，或用 @Qualifier／@Primary 明確選擇。
+- 不同機構若都有名叫 PolicyServiceImpl 的 class，預設 Bean 名稱可能同為 policyServiceImpl。可用 @Service("bankPolicyService") 等明確名稱區分；不同 package 並不保證預設 Bean 名稱不同。
 - 透過 Spring 注入 Service 才會取得其代理。自行 new 或 this 呼叫會影響 @Transactional／@Async 的代理行為。[Spring 交易代理規則](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html)。
 
 如果想維持無 Spring 註解的業務實作，也可以在本服務設定中建立：
@@ -250,6 +257,8 @@ public class PolicyDaoImpl implements PolicyDao {
 
 @Repository 來自 org.springframework.stereotype；SqlSessionTemplate 來自 org.mybatis.spring。這個例子不需要 @MapperScan 掃描 PolicyDao。它是自己寫實作的普通介面，SQL 由 namespace＋statement id 查找。需要把包含 bank.PolicyStatements.find 的 Mapper XML 載入對應 SqlSessionFactory。
 
+如果舊 DAO 使用 @Resource(name = "sqlSessionTemplate1")，掃描只會註冊 DAO，不會自動把新 Bean 改成該名稱。可以調整注入點，或在手動配置中用 @Bean(name = {"bankSqlSessionTemplate", "sqlSessionTemplate1"}) 為同一個 Template 保留別名。DAO／Service 自身原有的具名注入也要做相同核對。
+
 若 DAO 原本使用 JdbcTemplate，保留 @Repository，改為注入 JdbcTemplate 即可；多資料來源時用 @Qualifier 指定哪一個。SqlSessionTemplate 可以由多個 DAO 共用，並依 Spring 交易管理其 SqlSession。[MyBatis SqlSessionTemplate](https://mybatis.org/spring/sqlsession.html)。
 
 ### 7.2 MyBatis Mapper 介面，由框架產生實作
@@ -259,6 +268,7 @@ public class PolicyDaoImpl implements PolicyDao {
 ~~~java
 package com.company.bankapi.bank.service.dao;
 
+import com.company.bankapi.bank.service.vo.PolicyVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -616,9 +626,9 @@ addThenDisable 只是示範同一交易呼叫兩個 JAR，並非建議公司的�
 
 releaseConnection 會識別交易綁定，並非無條件把仍在交易中的連線關閉。[DataSourceUtils API](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/jdbc/datasource/DataSourceUtils.html)。MyBatis 參與同一交易也要求其 factory 與 transaction manager 使用對應的 DataSource。[MyBatis 交易整合](https://mybatis.org/spring/transactions.html)。
 
-**保留原本手動交易也是可行的過渡路線。** 若要保留主程式自行取得連線、commit／rollback／close 的行為，就把它當成獨立的手動交易範圍；不能只在外面加 @Transactional，就假設原本直接 getConnection 的程式已加入 Spring 交易。選定交易管理方式後，逐条驗證寫入與回滾。
+**保留原本手動交易也是可行的過渡路線。** 若要保留主程式自行取得連線、commit／rollback／close 的行為，就把它當成獨立的手動交易範圍；不能只在外面加 @Transactional，就假設原本直接 getConnection 的程式已加入 Spring 交易。選定交易管理方式後，逐條驗證寫入與回滾。
 
-對 AS400 物件，上例不適用。它仍可以由升級後的共用整合類別／連線池管理，再於呼叫時傳给 JAR，但其借還、主機程式呼叫與 commitment control 必須依實際 API 決定。JDBC 的 @Transactional 不會因為同一方法也傳了 AS400 物件，就自動包含主機操作。[IBM ProgramCall](https://www.ibm.com/docs/en/i/7.5.0?topic=classes-programcall-class)。
+對 AS400 物件，上例不適用。它仍可以由升級後的共用整合類別／連線池管理，再於呼叫時傳給 JAR，但其借還、主機程式呼叫與 commitment control 必須依實際 API 決定。JDBC 的 @Transactional 不會因為同一方法也傳了 AS400 物件，就自動包含主機操作。[IBM ProgramCall](https://www.ibm.com/docs/en/i/7.5.0?topic=classes-programcall-class)。
 
 ## 11. 雙 DataSource：不要讓注入猜資料庫
 
@@ -759,9 +769,9 @@ public class BankDataConfiguration {
 }
 ~~~
 
-这里有三个需要跟示例一起调整的地方：
+這裡有三個需要跟示例一起調整的地方：
 
-1. 如果沿用第 8 節 AuditLogDao，并且稽核表放銀行資料庫，在 bankSqlSessionFactory 再載入 mapper/company-audit 下的 XML；AuditStorageConfiguration 的參數加上 @Qualifier("bankSqlSessionTemplate")。目前上述 factory 僅載入業務 SQL，刻意不預設稽核落在哪個 DB。
+1. 如果沿用第 8 節 AuditLogDao，並且稽核表放銀行資料庫，在 bankSqlSessionFactory 再載入 mapper/company-audit 下的 XML；AuditStorageConfiguration 的參數加上 @Qualifier("bankSqlSessionTemplate")。目前上述 factory 僅載入業務 SQL，刻意不預設稽核落在哪個 DB。
 2. 注入 JdbcTemplate／SqlSessionTemplate 的普通 DAO，在多個同類 Bean 存在時加入對應 @Qualifier。@Primary 是預設選擇，不代表其他資料來源不用選。
 3. 某個業務寫入若由銀行資料庫控管，使用 @Transactional(transactionManager = "bankTransactionManager")；外部 JDBC 路線使用 legacyTransactionManager。
 
@@ -816,7 +826,7 @@ public class FileConfiguration {
 }
 ~~~
 
-FileStorageService 使用模擬專案已有的 String、long 建構子。這是明確 @Bean 註冊方式；若同一類別還保留 @Service，應避免再被掃描產生第二個 Bean。
+FileStorageService 使用模擬專案已有的 String、long 建構子。採這種方式時，要移除原類別 uploadDir／maxBytes 欄位上的舊 @Value，讓值由建構子統一提供；否則 Spring 後續的欄位注入可能覆寫建構子設定。這是明確 @Bean 註冊方式；若同一類別還保留 @Service，也應避免再被掃描產生第二個 Bean。
 
 ~~~yaml
 company:
@@ -838,33 +848,35 @@ ConfigurationProperties 綁定的是 Environment 中的設定，不會自動查 
 
 若 DB 參數必須在其他 Bean 建立前變成 Environment 的值，就要另設早期設定載入機制，例如合適的 ConfigData 整合。不能把原邏輯隨便移到 @PostConstruct，就假設已建立的 client／Bean 會重新綁定。這部分需依公司的參數使用時序另做小範圍設計。
 
-### 13.3 Filter：替代 web.xml 的 mapping／init-param
+### 13.3 ServletListener 與 Filter：替代 web.xml 的註冊與配置
 
-下面設定模擬專案的字型檢查，Filter 本身需已升級使用 jakarta.servlet：
+若專案中的系統啟動體檢已採用 `ServletContextListener`（如字型與 TIFF 檢查），在 Spring Boot 中可直接宣告為 `@Bean`，或使用 `ServletListenerRegistrationBean` 進行管理：
 
 ~~~java
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 
 @Configuration(proxyBeanMethods = false)
-public class ServletFilterConfiguration {
+public class ServletListenerConfiguration {
+
     @Bean
-    public FontCheckFilter fontCheckFilter() {
-        return new FontCheckFilter();
+    public ServletListenerRegistrationBean<FontCheckListener> fontCheckListenerRegistration() {
+        ServletListenerRegistrationBean<FontCheckListener> registration =
+                new ServletListenerRegistrationBean<>(new FontCheckListener());
+        registration.setOrder(1);
+        return registration;
     }
 
     @Bean
-    public FilterRegistrationBean<FontCheckFilter> fontFilterRegistration(
-            FontCheckFilter filter) {
-        var registration = new FilterRegistrationBean<>(filter);
-        registration.addUrlPatterns("/rest/*");
-        registration.addInitParameter("targetFont", "標楷體");
-        registration.setOrder(10);
+    public ServletListenerRegistrationBean<TiffImageReaderCheckListener> tiffCheckListenerRegistration() {
+        ServletListenerRegistrationBean<TiffImageReaderCheckListener> registration =
+                new ServletListenerRegistrationBean<>(new TiffImageReaderCheckListener());
+        registration.setOrder(2);
         return registration;
     }
 }
 ~~~
 
-Filter 與 registration 在同一配置管理，不再另外使用 @WebFilter／@ServletComponentScan 註冊同一個 Filter。映射改成 /rest/* 是示例；若需保持原 /*，應照契約設定。[Boot Servlet Filter 註冊](https://docs.spring.io/spring-boot/reference/web/servlet.html)。
+若仍有 HTTP 請求過濾之 Servlet Filter，則以 `FilterRegistrationBean` 替代 web.xml 的 filter-mapping 與 init-param。[Boot Servlet 註冊指引](https://docs.spring.io/spring-boot/reference/web/servlet.html)。
 
 ### 13.4 Mail、FTP、HTTP、排程
 
@@ -950,14 +962,14 @@ Auto-configuration 應透過 imports 載入，放在不會被應用 scan 的 pac
 | tx:annotation-driven | Boot 的交易自動配置；手動配置示例用 @EnableTransactionManagement |
 | jaxrs:server／serviceBeans／providers | JAXRSServerFactoryBean、setServiceBeans、setProviders |
 | cxf:bus 的 interceptor 配置 | 注入 Bus 掛載，或依本文移為明確 endpoint 配置 |
-| servlet/filter mapping | CXF starter 的 cxf.path／FilterRegistrationBean |
+| servlet/filter mapping／listener | CXF starter 的 cxf.path／FilterRegistrationBean／ServletListenerRegistrationBean |
 | task:annotation-driven | @EnableScheduling／@EnableAsync，依實際需要啟用 |
 | mailSender bean | Boot Mail 自動配置，或自己 @Bean 定義 |
 | GlobalConfig static 值 | 優先用配置物件／服務注入；每個應用有自己的設定 |
 
 Spring Boot 4 仍可使用 @ImportResource 過渡載入 Spring XML；「採 Java configuration」不等於框架已禁止 XML。已升級 JAR 若暫時仍只有 XML，可以逐段移轉，不需要同時重寫所有配置。[Spring 混合 Java／XML 配置](https://docs.spring.io/spring-framework/reference/core/beans/java/composing-configuration-classes.html)。
 
-javax.sql.DataSource 與 java.sql.Connection 屬於 Java SE，仍保留原 package；不要將所有 javax.* 全域替換成 jakarta.*。
+javax.sql.DataSource 與 java.sql.Connection 屬於 Java SE，仍保留原 package；不要將所有 javax.* 全域替換成 jakarta.*。[Java SE DataSource API](https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/javax/sql/DataSource.html)。
 
 ## 16. 第一個服務可依序這樣落地
 

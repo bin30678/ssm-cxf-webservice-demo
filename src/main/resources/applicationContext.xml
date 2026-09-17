@@ -12,7 +12,7 @@
            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
            http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd">
 
-    <context:component-scan base-package="com.example.cxfdemo">
+    <context:component-scan base-package="com.example.cxfdemo, com.external.liba, com.external.libb">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
 
@@ -53,28 +53,16 @@
         <property name="dataSource" ref="dataSource1"/>
     </bean>
 
-    <!-- DataSource 2 (AS400 / DB2 模擬) -->
-    <jee:jndi-lookup id="dataSource2" jndi-name="jdbc/cxfdemo2" resource-ref="true" expected-type="javax.sql.DataSource"/>
-
-    <bean id="sqlSessionFactory2" class="org.mybatis.spring.SqlSessionFactoryBean">
-        <property name="dataSource" ref="dataSource2"/>
+    <!-- 業務 DAO: PolicyDaoImpl 繼承 BaseDao，注入主庫三個依賴欄位 -->
+    <bean id="policyDao" class="com.example.cxfdemo.dao.PolicyDaoImpl">
+        <constructor-arg ref="sqlSessionTemplate1"/>
+        <constructor-arg ref="jdbcTemplate1"/>
+        <constructor-arg ref="dataSource1"/>
     </bean>
 
-    <bean id="transactionManager2" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-        <property name="dataSource" ref="dataSource2"/>
-    </bean>
-
-    <bean id="sqlSessionTemplate2" class="org.mybatis.spring.SqlSessionTemplate">
-        <constructor-arg index="0" ref="sqlSessionFactory2" />
-    </bean>
-    
-    <bean id="jdbcTemplate2" class="org.springframework.jdbc.core.JdbcTemplate">
-        <property name="dataSource" ref="dataSource2"/>
-    </bean>
-
-    <!-- Scanner 只為 db1 建立 Mapper Interface，避免混淆 (或可設定兩個 scanner 掃不同 package) -->
+    <!-- Scanner 只為 db1 建立 Mapper Interface -->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.example.cxfdemo.mapper, com.example.cxfdemo.dao"/>
+        <property name="basePackage" value="com.example.cxfdemo.mapper"/>
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory1"/>
     </bean>
 
@@ -106,8 +94,8 @@
 
     <bean id="quartzDemoTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
         <property name="jobDetail" ref="quartzDemoJobDetail"/>
-        <property name="startDelay" value="1000"/> <!-- 啟動後 1 秒觸發 -->
-        <property name="repeatInterval" value="300000"/> <!-- 每 5 分鐘 (300,000 ms) 觸發一次 -->
+        <property name="startDelay" value="1000"/>
+        <property name="repeatInterval" value="300000"/>
     </bean>
 
     <bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
@@ -120,5 +108,4 @@
 
     <!-- 啟用 Spring @Scheduled 註解支援 -->
     <task:annotation-driven/>
-
 </beans>

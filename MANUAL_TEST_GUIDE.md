@@ -6,7 +6,7 @@
 
 ## 目錄
 1. [環境前置準備](#1-環境前置準備)
-2. [功能一：系統啟動自動體檢（Filter / DB 設定載入 / Quartz）](#功能一系統啟動自動體檢filter--db-設定載入--quartz)
+2. [功能一：系統啟動自動體檢（ServletListener / DB 設定載入 / Quartz）](#功能一系統啟動自動體檢servletlistener--db-設定載入--quartz)
 3. [功能二：CXF REST API 與 Response 延遲緩衝寫入 DB (AuditLog)](#功能二cxf-rest-api-與-response-延遲緩衝寫入-db-auditlog)
 4. [功能三：SOAP WebService 介面呼叫 (WSDL 與保單查詢)](#功能三soap-webservice-介面呼叫-wsdl-與保單查詢)
 5. [功能四：非同步背景長輪詢呼叫外部銀行（20 次重試機制）](#功能四非同步背景長輪詢呼叫外部銀行20-次重試機制)
@@ -60,11 +60,11 @@ mvn tomcat6:run
 
 ---
 
-## 功能一：系統啟動自動體檢（Filter / DB 設定載入 / Quartz）
+## 功能一：系統啟動自動體檢（ServletListener / DB 設定載入 / Quartz）
 
 ### 測試目的
 驗證系統啟動時：
-1. Servlet Filter 會主動檢查作業系統有無 **TIFF ImageReader** 與指定字型（預設：**標楷體**）。
+1. ServletContextListener 會主動檢查作業系統有無 **TIFF ImageReader** 與指定字型（預設：**標楷體**）。
 2. `DatabasePropertyPlaceholderConfigurer` 在 Spring 實例化前，直接透過 `GenericDao.getConnection1()` 從 DB1 撈取 `system_properties`，並由 `MethodInvokingFactoryBean` 注入靜態類別 `GlobalConfig`。
 3. Quartz 排程在系統啟動 1 秒後自動觸發第一次執行，之後每 5 分鐘觸發一次。
 
@@ -74,8 +74,8 @@ mvn tomcat6:run
 ### 預期結果
 Console 應出現以下關鍵 Log：
 ```text
-=== [Filter Init] TIFF ImageReader is AVAILABLE in the system.
-=== [Filter Init] Font '標楷體' is AVAILABLE in the system.
+=== [Listener Init] TIFF ImageReader is AVAILABLE in the system.
+=== [Listener Init] Font '標楷體' is AVAILABLE in the system.
 === Loading Properties from Database using GenericDao ===
 Loaded DB Property: system.app.url = http://localhost:8080/cxfdemo
 === [GlobalConfig] url is set to: http://localhost:8080/cxfdemo ===
@@ -356,7 +356,7 @@ curl -X POST http://localhost:8080/rest/files/upload \
 
 | 編號 | 功能描述 | 快速驗證途徑 | 預期確認點 |
 |:---:|:---|:---|:---|
-| 1 | TIFF / 字型檢查 Filter | 啟動 Tomcat | 觀察 Console 是否出現 `[Filter Init]` 判定資訊 |
+| 1 | TIFF / 字型檢查 ServletListener | 啟動 Tomcat | 觀察 Console 是否出現 `[Listener Init]` 判定資訊 |
 | 2 | DB 參數注入靜態類別 | 啟動 Tomcat | 觀察 `Loaded DB Property` 及 `GlobalConfig.getUrl()` 是否有值 |
 | 3 | Quartz 排程觸發 | 啟動 Tomcat 等待 1 秒 | Console 印出 `[Quartz Job] Triggered at...` |
 | 4 | CXF Response 緩衝寫入 DB | `GET /rest/policies` | Console 出現 `[Audit Response (onClose)]`，DB 查出 audit 紀錄 |

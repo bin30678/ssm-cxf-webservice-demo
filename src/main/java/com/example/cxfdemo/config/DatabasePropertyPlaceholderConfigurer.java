@@ -5,6 +5,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,7 +31,8 @@ public class DatabasePropertyPlaceholderConfigurer extends PropertyPlaceholderCo
         ResultSet rs = null;
         
         try {
-            conn = GenericDao.getConnection1();
+            DataSource dataSource = (DataSource) beanFactoryToProcess.getBean("dataSource1");
+            conn = dataSource.getConnection();
             if (conn != null) {
                 ps = conn.prepareStatement("SELECT prop_key, prop_value FROM system_properties");
                 rs = ps.executeQuery();

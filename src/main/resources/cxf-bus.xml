@@ -24,6 +24,9 @@
         <property name="auditLogDao" ref="auditLogDao"/>
     </bean>
 
+    <!-- JSON Provider -->
+    <bean id="gsonProvider" class="com.example.cxfdemo.provider.GsonProvider"/>
+
     <cxf:bus>
         <cxf:inInterceptors>
             <ref bean="auditRequestInterceptor"/>
@@ -37,10 +40,15 @@
         <cxf:inFaultInterceptors>
             <ref bean="auditFaultInterceptor"/>
         </cxf:inFaultInterceptors>
+        <cxf:properties>
+            <entry key="org.apache.cxf.jaxrs.bus.providers">
+                <list>
+                    <ref bean="gsonProvider"/>
+                    <ref bean="unifiedExceptionMapper"/>
+                </list>
+            </entry>
+        </cxf:properties>
     </cxf:bus>
-
-    <!-- JSON Provider -->
-    <bean id="gsonProvider" class="com.example.cxfdemo.provider.GsonProvider"/>
 
     <!-- JAX-RS REST Endpoints -->
     <jaxrs:server id="restContainer" address="/">
@@ -48,10 +56,6 @@
             <ref bean="policyResource"/>
             <ref bean="fileUploadResource"/>
         </jaxrs:serviceBeans>
-        <jaxrs:providers>
-            <ref bean="gsonProvider"/>
-            <ref bean="unifiedExceptionMapper"/>
-        </jaxrs:providers>
     </jaxrs:server>
 
     <!-- JAX-WS SOAP Endpoints -->
