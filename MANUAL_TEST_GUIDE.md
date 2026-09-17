@@ -65,7 +65,7 @@ mvn tomcat6:run
 ### 測試目的
 驗證系統啟動時：
 1. ServletContextListener 會主動檢查作業系統有無 **TIFF ImageReader** 與指定字型（預設：**標楷體**）。
-2. `DatabasePropertyPlaceholderConfigurer` 在 Spring 實例化前，直接透過 `GenericDao.getConnection1()` 從 DB1 撈取 `system_properties`，並由 `MethodInvokingFactoryBean` 注入靜態類別 `GlobalConfig`。
+2. `DatabasePropertyPlaceholderConfigurer` 在 Spring 啟動時透過 `beanFactory` 取得主庫 `DataSource` (`dataSource1`) 建立連線，從 DB1 撈取 `system_properties`，並由 `MethodInvokingFactoryBean` 注入靜態類別 `GlobalConfig`。
 3. Quartz 排程在系統啟動 1 秒後自動觸發第一次執行，之後每 5 分鐘觸發一次。
 
 ### 測試步驟
