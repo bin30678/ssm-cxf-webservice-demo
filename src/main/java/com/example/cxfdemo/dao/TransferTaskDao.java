@@ -1,26 +1,17 @@
 package com.example.cxfdemo.dao;
 
-import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Repository
-public class TransferTaskDao {
+public class TransferTaskDao extends BaseDao {
 
     private static final Logger log = LoggerFactory.getLogger(TransferTaskDao.class);
-
-    @Resource(name = "sqlSessionTemplate1")
-    private SqlSessionTemplate sqlSessionTemplate;
-
-    public void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
-        this.sqlSessionTemplate = sqlSessionTemplate;
-    }
 
     public void insertMaster(String taskId, int status, String statusDesc) {
         Map<String, Object> params = new HashMap<String, Object>();

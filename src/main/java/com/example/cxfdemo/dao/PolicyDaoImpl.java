@@ -22,11 +22,7 @@ import java.util.List;
 @Repository("policyDao")
 public class PolicyDaoImpl extends BaseDao implements PolicyDao {
 
-    @Autowired
-    public PolicyDaoImpl(SqlSessionTemplate sqlSessionTemplate,
-                         JdbcTemplate jdbcTemplate,
-                         DataSource dataSource) {
-        super(sqlSessionTemplate, jdbcTemplate, dataSource);
+    public PolicyDaoImpl() {
     }
 
     @Override

@@ -53,12 +53,7 @@
         <property name="dataSource" ref="dataSource1"/>
     </bean>
 
-    <!-- 業務 DAO: PolicyDaoImpl 繼承 BaseDao，注入主庫三個依賴欄位 -->
-    <bean id="policyDao" class="com.example.cxfdemo.dao.PolicyDaoImpl">
-        <constructor-arg ref="sqlSessionTemplate1"/>
-        <constructor-arg ref="jdbcTemplate1"/>
-        <constructor-arg ref="dataSource1"/>
-    </bean>
+
 
     <!-- Scanner 只為 db1 建立 Mapper Interface -->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">

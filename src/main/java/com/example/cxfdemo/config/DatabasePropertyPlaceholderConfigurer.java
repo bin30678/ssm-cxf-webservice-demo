@@ -22,39 +22,37 @@ public class DatabasePropertyPlaceholderConfigurer extends PropertyPlaceholderCo
     }
 
     @Override
-    protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess, Properties props) throws BeansException {
-        
-        System.out.println("=== Loading Properties from Database using GenericDao ===");
-        
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        System.out.println("=== Loading Properties from Database ===");
+
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
-        
+
         try {
-            DataSource dataSource = (DataSource) beanFactoryToProcess.getBean("dataSource1");
+            DataSource dataSource = (DataSource) beanFactory.getBean("dataSource1");
             conn = dataSource.getConnection();
             if (conn != null) {
                 ps = conn.prepareStatement("SELECT prop_key, prop_value FROM system_properties");
                 rs = ps.executeQuery();
-                
+
+                Properties dbProps = new Properties();
                 while (rs.next()) {
                     String key = rs.getString("prop_key");
                     String value = rs.getString("prop_value");
-                    props.setProperty(key, value);
+                    dbProps.setProperty(key, value);
                     System.out.println("Loaded DB Property: " + key + " = " + value);
                 }
-            } else {
-                System.err.println("Warning: Could not get Connection from GenericDao for properties!");
+                setProperties(dbProps);
             }
         } catch (Exception e) {
-            System.err.println("Failed to load properties from database");
-            e.printStackTrace();
+            System.err.println("Failed to load properties from database via beanFactory: " + e.getMessage());
         } finally {
-            if (rs != null) try { rs.close(); } catch (Exception e) {}
-            if (ps != null) try { ps.close(); } catch (Exception e) {}
+            if (rs != null) try { rs.close(); } catch (Exception ignored) {}
+            if (ps != null) try { ps.close(); } catch (Exception ignored) {}
             GenericDao.closeConnection(conn);
         }
 
-        super.processProperties(beanFactoryToProcess, props);
+        super.postProcessBeanFactory(beanFactory);
     }
 }

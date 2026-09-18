@@ -1,6 +1,7 @@
 package com.example.cxfdemo.dao;
 
 import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
@@ -8,31 +9,43 @@ import javax.sql.DataSource;
 /**
  * 主專案 BaseDao 抽象類別 (SSM 基準實作)。
  * 持有 SqlSessionTemplate、JdbcTemplate、DataSource 三個欄位。
- * 由 Spring 交易/資料存取配置注入，三個欄位均指向同一個主資料庫 (cxfdemo1)。
+ * 採用屬性注入（Field Injection / Setter Injection），由 Spring 容器自動注入主庫 (cxfdemo1) 相關元件。
  */
 public abstract class BaseDao {
 
-    protected final SqlSessionTemplate sqlSessionTemplate;
-    protected final JdbcTemplate jdbcTemplate;
-    protected final DataSource dataSource;
+    @Autowired
+    protected SqlSessionTemplate sqlSessionTemplate;
 
-    protected BaseDao(SqlSessionTemplate sqlSessionTemplate,
-                      JdbcTemplate jdbcTemplate,
-                      DataSource dataSource) {
-        this.sqlSessionTemplate = sqlSessionTemplate;
-        this.jdbcTemplate = jdbcTemplate;
-        this.dataSource = dataSource;
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    protected DataSource dataSource;
+
+    public BaseDao() {
     }
 
     public SqlSessionTemplate getSqlSessionTemplate() {
         return sqlSessionTemplate;
     }
 
+    public void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
+        this.sqlSessionTemplate = sqlSessionTemplate;
+    }
+
     public JdbcTemplate getJdbcTemplate() {
         return jdbcTemplate;
     }
 
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
     public DataSource getDataSource() {
         return dataSource;
+    }
+
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 }
