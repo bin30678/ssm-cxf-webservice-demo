@@ -3,6 +3,8 @@ package com.example.cxfdemo.controller;
 import com.example.cxfdemo.scheduler.ScheduledTasks;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -22,6 +24,8 @@ import java.util.Map;
  */
 @Controller
 public class TaskController {
+
+    private static final Logger log = LoggerFactory.getLogger(TaskController.class);
 
     @Resource
     private ScheduledTasks scheduledTasks;
@@ -53,8 +57,10 @@ public class TaskController {
             @RequestParam(value = "dir", required = false, defaultValue = "C:/backup_folder") String dir,
             @RequestParam(value = "days", required = false, defaultValue = "7") Integer days
     ) {
+        log.info("TaskController.cleanBackup called with dir: {}, days: {}", dir, days);
         int daysToKeep = (days != null && days > 0) ? days : 7;
         Map<String, Object> result = scheduledTasks.cleanOldBackupFiles(dir, daysToKeep);
+        log.info("TaskController.cleanBackup completed with result: {}", result);
         return gson.toJson(result);
     }
 }

@@ -2,6 +2,8 @@ package com.example.cxfdemo.service;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -11,7 +13,10 @@ import java.io.InputStream;
 @Service
 public class FtpService {
 
+    private static final Logger log = LoggerFactory.getLogger(FtpService.class);
+
     public boolean uploadFile(String server, int port, String user, String pass, String remoteDirPath, File localFile) {
+        log.info("FtpService.uploadFile connecting to server: {}:{}, remoteDirPath: {}", server, port, remoteDirPath);
         FTPClient ftpClient = new FTPClient();
         try {
             ftpClient.connect(server, port);
@@ -21,22 +26,20 @@ public class FtpService {
 
             // Change to remote directory
             if (!ftpClient.changeWorkingDirectory(remoteDirPath)) {
-                // If it doesn't exist, you might need to create it (simplified here)
                 ftpClient.makeDirectory(remoteDirPath);
                 ftpClient.changeWorkingDirectory(remoteDirPath);
             }
 
             try (InputStream inputStream = new FileInputStream(localFile)) {
-                System.out.println("Start uploading first file");
+                log.info("Start uploading file: {}", localFile.getName());
                 boolean done = ftpClient.storeFile(localFile.getName(), inputStream);
                 if (done) {
-                    System.out.println("The file is uploaded successfully.");
+                    log.info("The file {} was uploaded successfully to FTP server.", localFile.getName());
                     return true;
                 }
             }
         } catch (Exception ex) {
-            System.out.println("Error: " + ex.getMessage());
-            ex.printStackTrace();
+            log.error("FtpService.uploadFile error: {}", ex.getMessage(), ex);
         } finally {
             try {
                 if (ftpClient.isConnected()) {
@@ -44,7 +47,7 @@ public class FtpService {
                     ftpClient.disconnect();
                 }
             } catch (Exception ex) {
-                ex.printStackTrace();
+                log.error("Failed to disconnect FTP client", ex);
             }
         }
         return false;

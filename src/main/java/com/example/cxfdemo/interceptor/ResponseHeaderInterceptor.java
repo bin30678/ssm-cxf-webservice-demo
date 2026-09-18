@@ -4,6 +4,8 @@ import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.phase.AbstractPhaseInterceptor;
 import org.apache.cxf.phase.Phase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -15,12 +17,15 @@ import java.util.Map;
 @Component
 public class ResponseHeaderInterceptor extends AbstractPhaseInterceptor<Message> {
 
+    private static final Logger log = LoggerFactory.getLogger(ResponseHeaderInterceptor.class);
+
     public ResponseHeaderInterceptor() {
         super(Phase.PRE_STREAM);
     }
 
     @Override
     public void handleMessage(Message message) throws Fault {
+        log.info("ResponseHeaderInterceptor.handleMessage attaching response security headers");
         Map<String, List<String>> headers = (Map<String, List<String>>) message.get(Message.PROTOCOL_HEADERS);
         if (headers == null) {
             headers = new HashMap<>();

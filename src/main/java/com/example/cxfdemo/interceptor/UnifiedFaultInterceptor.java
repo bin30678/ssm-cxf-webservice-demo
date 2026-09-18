@@ -9,12 +9,17 @@ import org.apache.cxf.interceptor.Fault;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.phase.AbstractPhaseInterceptor;
 import org.apache.cxf.phase.Phase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 @Component
 public class UnifiedFaultInterceptor extends AbstractPhaseInterceptor<Message> {
+
+    private static final Logger log = LoggerFactory.getLogger(UnifiedFaultInterceptor.class);
+
     private static final String ERROR_NAMESPACE = "https://example.com/cxfdemo/error";
 
     public UnifiedFaultInterceptor() {
@@ -34,6 +39,8 @@ public class UnifiedFaultInterceptor extends AbstractPhaseInterceptor<Message> {
         String safeMessage = serviceFault == null ? "服務處理失敗" : serviceFault.getMessage();
         int status = serviceFault == null ? 500 : serviceFault.getHttpStatus();
         QName faultCode = status >= 500 ? Fault.FAULT_CODE_SERVER : Fault.FAULT_CODE_CLIENT;
+
+        log.warn("UnifiedFaultInterceptor.handleMessage transforming exception, code: {}, status: {}, message: {}", code, status, safeMessage);
 
         SoapFault soapFault = new SoapFault(safeMessage, original, faultCode);
         soapFault.setStatusCode(status);

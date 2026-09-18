@@ -1,5 +1,7 @@
 package com.example.cxfdemo.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -12,6 +14,8 @@ import java.util.List;
 
 @Service
 public class JavaMailService {
+
+    private static final Logger log = LoggerFactory.getLogger(JavaMailService.class);
 
     @Resource(name = "mailSender")
     private JavaMailSender mailSender;
@@ -27,6 +31,7 @@ public class JavaMailService {
      * @param attachmentPaths 附件檔案路徑清單
      */
     public void sendMail(String from, List<String> to, List<String> cc, String subject, String body, List<String> attachmentPaths) {
+        log.info("JavaMailService.sendMail called from: {}, to: {}, subject: {}", from, to, subject);
         try {
             MimeMessage message = mailSender.createMimeMessage();
             
@@ -54,10 +59,10 @@ public class JavaMailService {
             }
             
             mailSender.send(message);
-            System.out.println("Email sent successfully to: " + to);
+            log.info("Email sent successfully to: {}", to);
             
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("JavaMailService.sendMail failed for to: {}", to, e);
         }
     }
 }

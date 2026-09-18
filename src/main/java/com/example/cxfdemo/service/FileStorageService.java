@@ -1,6 +1,8 @@
 package com.example.cxfdemo.service;
 
 import com.example.cxfdemo.model.FileUploadRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,9 @@ import java.util.regex.Pattern;
 
 @Service
 public class FileStorageService implements InitializingBean {
+
+    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
+
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-zA-Z0-9.-]");
     
     @Value("${file.upload.dir:/tmp/uploads}")
@@ -42,16 +47,19 @@ public class FileStorageService implements InitializingBean {
     public void afterPropertiesSet() {
         if (uploadDir != null) {
             this.storageRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+            log.info("FileStorageService initialized with storageRoot: {}", this.storageRoot);
         }
     }
 
     public FileUploadRecord store(InputStream input, String originalName,
                                   String contentType, String description) throws IOException {
+        log.info("FileStorageService.store called for originalName: {}, maxBytes: {}", originalName, maxBytes);
         Files.createDirectories(storageRoot);
         String safeName = safeFilename(originalName);
         String storedName = UUID.randomUUID() + "-" + safeName;
         Path target = storageRoot.resolve(storedName).normalize();
         if (!target.startsWith(storageRoot)) {
+            log.error("Invalid file path target: {}", target);
             throw new IllegalArgumentException("不合法的檔案路徑");
         }
 
@@ -63,11 +71,13 @@ public class FileStorageService implements InitializingBean {
             while ((read = input.read(buffer)) != -1) {
                 size += read;
                 if (size > maxBytes) {
+                    log.error("File size {} exceeded maxBytes {}", size, maxBytes);
                     throw new IllegalArgumentException("檔案不可超過 " + maxBytes + " bytes");
                 }
                 output.write(buffer, 0, read);
             }
         } catch (IOException | RuntimeException ex) {
+            log.error("FileStorageService.store error occurred while writing file: {}", storedName, ex);
             try {
                 Files.deleteIfExists(target);
             } catch (IOException ignored) {
@@ -75,6 +85,7 @@ public class FileStorageService implements InitializingBean {
             throw ex;
         }
 
+        log.info("FileStorageService.store success for storedName: {}, size: {} bytes", storedName, size);
         FileUploadRecord record = new FileUploadRecord();
         record.setOriginalName(originalName);
         record.setStoredName(storedName);

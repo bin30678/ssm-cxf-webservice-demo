@@ -121,6 +121,11 @@
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j2.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-1.2-api</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
 
         <!-- Database Drivers -->
         <!-- MySQL for local testing -->
@@ -240,6 +245,7 @@
             <version>1.0.0</version>
         </dependency>
         -->
+
 
         <!-- JAX-WS / JAXB APIs (since removed in Java 11, we need them to compile on JDK 21 targeting 1.8) -->
         <dependency>

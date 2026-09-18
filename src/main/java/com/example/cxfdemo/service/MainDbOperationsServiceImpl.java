@@ -4,6 +4,8 @@ import com.example.cxfdemo.dao.PolicyDaoImpl;
 import com.example.cxfdemo.mapper.DemoMapper;
 import com.example.cxfdemo.model.PolicyInfo;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +22,8 @@ import java.sql.PreparedStatement;
  */
 @Service("mainDbOperationsService")
 public class MainDbOperationsServiceImpl implements MainDbOperationsService {
+
+    private static final Logger log = LoggerFactory.getLogger(MainDbOperationsServiceImpl.class);
 
     private final DemoMapper demoMapper;
     private final SqlSessionTemplate sqlSessionTemplate;
@@ -43,47 +47,56 @@ public class MainDbOperationsServiceImpl implements MainDbOperationsService {
 
     @Override
     public PolicyInfo findViaMapper(String policyNo) {
+        log.info("MainDbOperationsServiceImpl.findViaMapper called for policyNo: {}", policyNo);
         return demoMapper.findPolicy(policyNo);
     }
 
     @Override
     public void insertViaMapper(PolicyInfo policy) {
+        log.info("MainDbOperationsServiceImpl.insertViaMapper called for policy: {}", policy);
         demoMapper.insertPolicy(policy);
     }
 
     @Override
     public PolicyInfo findViaSqlSessionTemplate(String policyNo) {
+        log.info("MainDbOperationsServiceImpl.findViaSqlSessionTemplate called for policyNo: {}", policyNo);
         return sqlSessionTemplate.selectOne(
                 "com.example.cxfdemo.mapper.DemoMapper.findPolicy", policyNo);
     }
 
     @Override
     public void insertViaSqlSessionTemplate(PolicyInfo policy) {
+        log.info("MainDbOperationsServiceImpl.insertViaSqlSessionTemplate called for policy: {}", policy);
         sqlSessionTemplate.insert(
                 "com.example.cxfdemo.mapper.DemoMapper.insertPolicy", policy);
     }
 
     @Override
     public PolicyInfo findViaJdbcTemplate(String policyNo) {
+        log.info("MainDbOperationsServiceImpl.findViaJdbcTemplate called for policyNo: {}", policyNo);
         return policyDao.findPolicyViaJdbc(policyNo);
     }
 
     @Override
     public void insertViaJdbcTemplate(PolicyInfo policy) {
+        log.info("MainDbOperationsServiceImpl.insertViaJdbcTemplate called for policy: {}", policy);
         policyDao.insertPolicy(policy);
     }
 
     @Override
     public PolicyInfo findViaPureJdbc(String policyNo) {
+        log.info("MainDbOperationsServiceImpl.findViaPureJdbc called for policyNo: {}", policyNo);
         try {
             return policyDao.findPolicyViaPureJdbc(policyNo);
         } catch (Exception e) {
+            log.error("Query via pure JDBC failed for policyNo: {}", policyNo, e);
             throw new RuntimeException("Query via pure JDBC failed", e);
         }
     }
 
     @Override
     public void insertViaPureJdbc(PolicyInfo policy) {
+        log.info("MainDbOperationsServiceImpl.insertViaPureJdbc called for policy: {}", policy);
         Connection conn = DataSourceUtils.getConnection(dataSource);
         PreparedStatement ps = null;
         try {
@@ -94,6 +107,7 @@ public class MainDbOperationsServiceImpl implements MainDbOperationsService {
             ps.setString(4, policy.getStatus());
             ps.executeUpdate();
         } catch (Exception e) {
+            log.error("Insert via pure JDBC failed for policy: {}", policy, e);
             throw new RuntimeException("Insert via pure JDBC failed", e);
         } finally {
             if (ps != null) try { ps.close(); } catch (Exception ignored) {}
@@ -111,12 +125,14 @@ public class MainDbOperationsServiceImpl implements MainDbOperationsService {
     public void executeMixedFourOperations(
             PolicyInfo p1, PolicyInfo p2, PolicyInfo p3, PolicyInfo p4,
             boolean triggerRollback) {
+        log.info("MainDbOperationsServiceImpl.executeMixedFourOperations called, triggerRollback: {}", triggerRollback);
         insertViaMapper(p1);
         insertViaSqlSessionTemplate(p2);
         insertViaJdbcTemplate(p3);
         insertViaPureJdbc(p4);
 
         if (triggerRollback) {
+            log.warn("MainDbOperationsServiceImpl.executeMixedFourOperations throwing simulated rollback exception");
             throw new RuntimeException("Simulated transaction rollback exception");
         }
     }

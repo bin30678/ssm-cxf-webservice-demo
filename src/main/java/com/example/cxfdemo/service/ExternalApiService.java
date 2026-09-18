@@ -6,6 +6,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -13,11 +15,14 @@ import java.io.IOException;
 @Service
 public class ExternalApiService {
 
+    private static final Logger log = LoggerFactory.getLogger(ExternalApiService.class);
+
     /**
      * 模擬呼叫外部 API
      */
     public String callExternalApi() {
         String url = "https://jsonplaceholder.typicode.com/posts/1";
+        log.info("ExternalApiService.callExternalApi calling URL: {}", url);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(url);
         
@@ -26,22 +31,24 @@ public class ExternalApiService {
             response = httpClient.execute(httpGet);
             HttpEntity entity = response.getEntity();
             if (entity != null) {
-                return EntityUtils.toString(entity, "UTF-8");
+                String result = EntityUtils.toString(entity, "UTF-8");
+                log.info("ExternalApiService.callExternalApi success");
+                return result;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ExternalApiService.callExternalApi failed for URL: {}", url, e);
         } finally {
             if (response != null) {
                 try {
                     response.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Failed to close http response", e);
                 }
             }
             try {
                 httpClient.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Failed to close httpClient", e);
             }
         }
         return "ERROR";

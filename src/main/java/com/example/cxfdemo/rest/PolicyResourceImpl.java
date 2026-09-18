@@ -7,6 +7,8 @@ import com.example.cxfdemo.service.AsyncBankTransferService;
 import com.example.cxfdemo.service.MainProjectIntegrationService;
 import com.example.cxfdemo.service.PolicyService;
 import com.example.cxfdemo.utils.RestTemplateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Service("policyResource")
 public class PolicyResourceImpl implements PolicyResource {
+
+    private static final Logger log = LoggerFactory.getLogger(PolicyResourceImpl.class);
 
     @Resource
     private PolicyService policyService;
@@ -39,11 +43,13 @@ public class PolicyResourceImpl implements PolicyResource {
 
     @Override
     public Response getPolicies() {
+        log.info("PolicyResourceImpl.getPolicies called");
         return Response.ok("{\"status\":\"ok\", \"message\":\"CXF REST API is working!\"}").build();
     }
 
     @Override
     public Response createPolicy(PolicyInfo policy) {
+        log.info("PolicyResourceImpl.createPolicy called with policy: {}", policy);
         if (policy == null) {
             policy = new PolicyInfo("P" + System.currentTimeMillis(), "新保戶", "意外險", "ACTIVE");
         } else if (policy.getPolicyNo() == null || policy.getPolicyNo().trim().isEmpty()) {
@@ -53,7 +59,7 @@ public class PolicyResourceImpl implements PolicyResource {
         try {
             policyService.createPolicy(policy);
         } catch (Exception e) {
-            // 若主鍵衝突則更新
+            log.warn("Policy creation threw exception, trying updatePolicy: {}", e.getMessage());
             policyService.updatePolicy(policy);
         }
 
@@ -65,35 +71,41 @@ public class PolicyResourceImpl implements PolicyResource {
 
     @Override
     public Response testAsyncBank() {
+        log.info("PolicyResourceImpl.testAsyncBank called");
         String taskId = asyncBankTransferService.startAsyncTransferTask();
         return Response.ok("{\"message\":\"Async bank transfer started in background.\", \"taskId\":\"" + taskId + "\"}").build();
     }
 
     @Override
     public Response testExternalJar() {
+        log.info("PolicyResourceImpl.testExternalJar called");
         mainProjectIntegrationService.executeExternalLibraries();
         return Response.ok("{\"message\":\"External JAR simulated. Check console for DB2 connection passing!\"}").build();
     }
 
     @Override
     public Response testRestTemplate() {
+        log.info("PolicyResourceImpl.testRestTemplate called");
         String result = restTemplateUtils.getWithLog("https://httpbin.org/get");
         return Response.ok("{\"message\":\"External API called and logged to DB!\", \"api_response_length\":" + result.length() + "}").build();
     }
 
     @Override
     public Response testCleanBackup(String dir, Integer days) {
+        log.info("PolicyResourceImpl.testCleanBackup called with dir: {}, days: {}", dir, days);
         Map<String, Object> result = scheduledTasks.cleanOldBackupFiles(dir, days == null ? 7 : days);
         return Response.ok(result).build();
     }
 
     @Override
     public Response inquire(PolicyInquiryRequest request) {
+        log.info("PolicyResourceImpl.inquire called for policyNo: {}", request != null ? request.getPolicyNo() : null);
         PolicyInfo info = policyService.find(request.getPolicyNo());
         if (info != null) {
             PolicyInquiryResponse response = new PolicyInquiryResponse(true, info, "API");
             return Response.ok(response).build();
         } else {
+            log.warn("PolicyResourceImpl.inquire policy not found for policyNo: {}", request != null ? request.getPolicyNo() : null);
             Map<String, String> error = new HashMap<>();
             error.put("status", "NOT_FOUND");
             error.put("message", "找無此保單");

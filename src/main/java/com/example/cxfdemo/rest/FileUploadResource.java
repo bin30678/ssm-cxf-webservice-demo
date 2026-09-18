@@ -4,6 +4,8 @@ import com.example.cxfdemo.service.FileStorageService;
 import javax.annotation.Resource;
 import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 import org.apache.cxf.jaxrs.ext.multipart.Multipart;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -20,6 +22,8 @@ import java.util.Map;
 @Path("/files")
 public class FileUploadResource {
 
+    private static final Logger log = LoggerFactory.getLogger(FileUploadResource.class);
+
     @Resource
     private FileStorageService fileStorageService;
 
@@ -32,8 +36,10 @@ public class FileUploadResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response uploadFile(@Multipart(value = "file", required = false) Attachment fileAttachment,
                                @Multipart(value = "description", required = false) String description) {
+        log.info("FileUploadResource.uploadFile called with description: {}", description);
         
         if (fileAttachment == null) {
+            log.warn("FileUploadResource.uploadFile missing file attachment");
             Map<String, String> error = new HashMap<>();
             error.put("status", "BAD_REQUEST");
             error.put("message", "缺少 file 欄位");
@@ -54,6 +60,7 @@ public class FileUploadResource {
                 demoMapper.insertUpload(record);
             }
 
+            log.info("FileUploadResource.uploadFile success, record ID: {}", record.getId());
             Map<String, Object> result = new HashMap<>();
             result.put("status", "SUCCESS");
             result.put("id", record.getId());
@@ -61,6 +68,7 @@ public class FileUploadResource {
             return Response.ok(result).build();
 
         } catch (Exception ex) {
+            log.error("FileUploadResource.uploadFile failed", ex);
             Map<String, String> error = new HashMap<>();
             error.put("status", "FAILED");
             error.put("message", ex.getMessage() != null ? ex.getMessage() : "檔案上傳失敗");

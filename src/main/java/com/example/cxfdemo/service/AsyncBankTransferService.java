@@ -1,6 +1,8 @@
 package com.example.cxfdemo.service;
 
 import com.example.cxfdemo.dao.TransferTaskDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -9,6 +11,8 @@ import java.util.UUID;
 
 @Service
 public class AsyncBankTransferService {
+
+    private static final Logger log = LoggerFactory.getLogger(AsyncBankTransferService.class);
 
     @Resource
     private TransferTaskDao transferTaskDao;
@@ -26,7 +30,7 @@ public class AsyncBankTransferService {
         
         // 1. 建立主表紀錄 (初始狀態 0: 待處理)
         insertMasterRecord(taskId, 0);
-        System.out.println("主表已建立，Task ID: " + taskId + "，開始非同步執行..");
+        log.info("主表已建立，Task ID: {}，開始非同步執行..", taskId);
 
         // 2. 啟動背景執行緒 (不阻塞原本的 HTTP API 請求)
         new Thread(new Runnable() {
@@ -36,7 +40,7 @@ public class AsyncBankTransferService {
                 
                 // 3. 重試機制: 最多 20 次
                 for (int i = 1; i <= 20; i++) {
-                    System.out.println("--- 開始第 " + i + " 次嘗試 ---");
+                    log.info("--- Task {} 開始第 {} 次嘗試 ---", taskId, i);
                     
                     try {
                         // 步驟 1: 取得外部資料
@@ -61,12 +65,12 @@ public class AsyncBankTransferService {
                         
                         // 四個步驟都沒拋出異常，代表成功！跳出迴圈
                         isSuccess = true;
-                        System.out.println("Task " + taskId + " 處理成功，結束重試迴圈。");
+                        log.info("Task {} 處理成功，結束重試迴圈。", taskId);
                         break; 
                         
                     } catch (Exception e) {
                         // 失敗當次，主表不改變狀態，只在子表記錄失敗原因
-                        System.out.println("第 " + i + " 次嘗試發生錯誤: " + e.getMessage());
+                        log.warn("Task {} 第 {} 次嘗試發生錯誤: {}", taskId, i, e.getMessage());
                         insertDetailRecord(taskId, -1, "發生錯誤: " + e.getMessage(), false);
                         
                         // Sleep 1 秒後重跑下一迴圈 (這裡為測試展示，縮短為 1 秒)
@@ -80,7 +84,7 @@ public class AsyncBankTransferService {
                 
                 // 4. 如果跑滿 20 次仍然失敗
                 if (!isSuccess) {
-                    System.out.println("Task " + taskId + " 已達到重試上限 (20次)，宣告失敗。");
+                    log.error("Task {} 已達到重試上限 (20次)，宣告失敗。", taskId);
                     updateMasterStatus(taskId, 99); // 99 代表徹底失敗
                     insertDetailRecord(taskId, 99, "已達重試上限，任務終止", false);
                 }
@@ -129,20 +133,20 @@ public class AsyncBankTransferService {
         if (transferTaskDao != null) {
             transferTaskDao.insertMaster(taskId, status, getStatusDesc(status));
         }
-        System.out.println("[DB] 主表已建立 -> Task ID: " + taskId + ", 狀態: " + status + " (" + getStatusDesc(status) + ")");
+        log.info("[DB] 主表已建立 -> Task ID: {}, 狀態: {} ({})", taskId, status, getStatusDesc(status));
     }
 
     private void updateMasterStatus(String taskId, int status) {
         if (transferTaskDao != null) {
             transferTaskDao.updateMasterStatus(taskId, status, getStatusDesc(status));
         }
-        System.out.println("[DB] 主表狀態更新為: " + status + " (" + getStatusDesc(status) + ")");
+        log.info("[DB] 主表狀態更新為: {} ({})", status, getStatusDesc(status));
     }
 
     private void insertDetailRecord(String taskId, int type, String message, boolean isSuccess) {
         if (transferTaskDao != null) {
             transferTaskDao.insertDetail(taskId, type, message, isSuccess);
         }
-        System.out.println("[DB] 寫入子表 -> 步驟: " + type + ", 成功: " + isSuccess + ", 訊息: " + message);
+        log.info("[DB] 寫入子表 -> 步驟: {}, 成功: {}, 訊息: {}", type, isSuccess, message);
     }
 }

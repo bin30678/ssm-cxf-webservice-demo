@@ -13,10 +13,15 @@ import org.apache.cxf.message.Message;
 import org.apache.cxf.phase.AbstractPhaseInterceptor;
 import org.apache.cxf.phase.Phase;
 import org.apache.cxf.staxutils.StaxUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RequestValidationInterceptor extends AbstractPhaseInterceptor<Message> {
+
+    private static final Logger log = LoggerFactory.getLogger(RequestValidationInterceptor.class);
+
     public static final String TRACE_ID_KEY = RequestValidationInterceptor.class.getName() + ".traceId";
     public static final String START_NANOS_KEY = RequestValidationInterceptor.class.getName() + ".startNanos";
 
@@ -28,9 +33,11 @@ public class RequestValidationInterceptor extends AbstractPhaseInterceptor<Messa
 
     @Override
     public void handleMessage(Message message) throws Fault {
+        String traceId = requestTraceId(message);
+        log.info("RequestValidationInterceptor.handleMessage validating request with traceId: {}", traceId);
         if (message.getExchange() != null) {
             message.getExchange().put(START_NANOS_KEY, System.nanoTime());
-            message.getExchange().put(TRACE_ID_KEY, requestTraceId(message));
+            message.getExchange().put(TRACE_ID_KEY, traceId);
         }
 
         // These properties are read by CXF's StAX interceptor before parsing SOAP XML.
@@ -51,6 +58,7 @@ public class RequestValidationInterceptor extends AbstractPhaseInterceptor<Messa
         boolean soap = message instanceof SoapMessage;
         boolean allowed = soap ? isSoap(contentType) : isJson(contentType);
         if (!allowed) {
+            log.warn("Unsupported Media Type in RequestValidationInterceptor: {}, soap: {}", contentType, soap);
             ServiceFaultException exception = new ServiceFaultException(
                     "UNSUPPORTED_MEDIA_TYPE",
                     soap ? "SOAP 僅接受 text/xml 或 application/soap+xml"
