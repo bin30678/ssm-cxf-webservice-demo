@@ -16,11 +16,10 @@
 <body>
 <h1>SSM + Apache CXF</h1>
 <section>
-    <h2>REST API（共同前綴 /rest/api）</h2>
+    <h2>REST API（共同前綴 /rest）</h2>
     <ul>
-        <li><a href="rest/api/health">GET /rest/api/health</a></li>
-        <li><a href="rest/api/policies/P-2026-0001">GET /rest/api/policies/P-2026-0001</a></li>
-        <li><a href="rest/api/policies/P-2026-0001.json">GET /rest/api/policies/P-2026-0001.json</a></li>
+        <li><a href="rest/health">GET /rest/health</a></li>
+        <li><a href="rest/policies">GET /rest/policies（API 連線檢查）</a></li>
     </ul>
 </section>
 <section>
@@ -37,7 +36,7 @@
 </section>
 <section>
     <h2>SOAP Web Service</h2>
-    <p>WSDL：<a href="ws/policy?wsdl"><code>/ws/policy?wsdl</code></a></p>
+    <p>WSDL：<a href="Webservice/soap/policies?wsdl"><code>/Webservice/soap/policies?wsdl</code></a></p>
     <p>Operations：<code>getPolicyStatus</code>、<code>getPolicySummary</code></p>
 </section>
 <script>
@@ -46,7 +45,7 @@
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         result.textContent = '查詢中…';
-        const response = await fetch('rest/api/policies/inquiry', {
+        const response = await fetch('rest/policies/inquiry', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(Object.fromEntries(new FormData(form)))

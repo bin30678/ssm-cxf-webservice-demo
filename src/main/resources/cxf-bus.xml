@@ -53,6 +53,7 @@
     <!-- JAX-RS REST Endpoints -->
     <jaxrs:server id="restContainer" address="/">
         <jaxrs:serviceBeans>
+            <ref bean="healthResource"/>
             <ref bean="policyResource"/>
             <ref bean="fileUploadResource"/>
         </jaxrs:serviceBeans>
