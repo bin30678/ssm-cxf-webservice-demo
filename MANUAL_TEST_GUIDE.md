@@ -128,12 +128,12 @@ curl -X GET http://localhost:8080/rest/policies
 #### 3.1 驗證 WSDL
 開啟瀏覽器訪問：
 ```
-http://localhost:8080/ws/soap/policies?wsdl
+http://localhost:8080/Webservice/soap/policies?wsdl
 ```
 **預期**：頁面能完整顯示 XML 格式的 WSDL 定義檔，包含 `PolicyInquiryService` 與相關 operation。
 
 #### 3.2 發送 SOAP 請求
-使用 Postman 或 SoapUI 發送 POST 請求至 `http://localhost:8080/ws/soap/policies`：
+使用 Postman 或 SoapUI 發送 POST 請求至 `http://localhost:8080/Webservice/soap/policies`：
 * **Header**：`Content-Type: text/xml; charset=utf-8`
 * **Body**：
   ```xml
@@ -297,6 +297,11 @@ Deleted empty directory: C:\backup_folder\old_sub_dir
 
 ## 功能八：檔案上傳與路徑安全檢核 (FileUploadResource)
 
+這是 HTTP multipart 上傳到應用伺服器本機磁碟，不是 FTP/TFTP。
+在主庫 `cxfdemo1` 執行 `src/main/resources/db/upload-settings.sql`，新增 `file.upload.dir` 與
+`file.upload.max-size`（預設建議 10485760 bytes / 10 MiB）。已有設定不覆蓋，其他部署須先調整目錄。
+DB 設定變更後重新啟動應用；`application.properties` 目前未載入。
+
 ### 測試目的
 驗證檔案上傳服務：
 - 過濾檔名非法字元。
@@ -316,10 +321,9 @@ curl -X POST http://localhost:8080/rest/files/upload \
 回傳 HTTP 200 與上傳結果 JSON：
 ```json
 {
-  "originalName": "pom.xml",
-  "storedName": "xxxx-xxxx-pom.xml",
-  "sizeBytes": 12345,
-  "description": "Maven POM 檔案"
+  "status": "SUCCESS",
+  "id": 1,
+  "storedName": "xxxx-xxxx-pom.xml"
 }
 ```
 
@@ -330,25 +334,21 @@ curl -X POST http://localhost:8080/rest/files/upload \
 因本機環境通常未架設公開的 SMTP 與 FTP Server，若需手動驗證此兩項服務，請依以下設定進行：
 
 ### 9.1 JavaMail 發信測試
-1. 開啟 `src/main/resources/applicationContext.xml`。
-2. 找到 `mailSender` bean，填入真實的 SMTP 主機（如 Gmail 或企業內部 Mail Relay）：
-   ```xml
-   <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
-       <property name="host" value="smtp.yourcompany.com"/>
-       <property name="port" value="25"/>
-       <property name="username" value="your_account"/>
-       <property name="password" value="your_password"/>
-   </bean>
-   ```
-3. 在任意 Controller/Service 中注入 `JavaMailService`，呼叫：
+1. 在主庫 `system_properties` 設定實際 SMTP 的 `mail.host`、`mail.port`、`mail.username`、`mail.password`、`mail.from`，以及 `mail.smtp.auth`、`mail.smtp.starttls.enable`。
+2. `MailServiceImpl` 內讀取 `ConfigSingleton` 並自行建立寄信元件；Spring XML 不設定 `mailSender`。DB 異動後呼叫 `ConfigSingleton.getInstance().reload()` 或重啟。
+3. 在 Controller/Service 中注入 `MailService`，呼叫：
    ```java
-   javaMailService.sendEmail("sender@test.com", "receiver@test.com", "cc@test.com", "測試信件", "這是內文");
+   Mail mail = new Mail("測試信件", "<p>這是內文</p>");
+   mail.addTo("receiver@test.com");
+   mail.addCc("cc@test.com");
+   mailService.sendMail(mail);
    ```
 4. 觀察收件人信箱是否收到郵件。
 
 ### 9.2 FTP 上傳測試
 1. 在測試環境或本機架設 FileZilla Server。
-2. 注入 `FtpService` 並傳入 host, port, username, password, remoteDir, fileName, inputStream 進行上傳測試。
+2. 注入 `FtpService`，呼叫 `uploadFile(host, port, username, password, remoteDir, localFile)`，其中 localFile 是 `java.io.File`。
+3. 此類別使用 `FTPClient`，目前沒有 TFTP／SFTP／FTPS 實作。公司實際協定需另外確認。
 
 ---
 
@@ -360,7 +360,7 @@ curl -X POST http://localhost:8080/rest/files/upload \
 | 2 | DB 參數注入靜態類別 | 啟動 Tomcat | 觀察 `Loaded DB Property` 及 `GlobalConfig.getUrl()` 是否有值 |
 | 3 | Quartz 排程觸發 | 啟動 Tomcat 等待 1 秒 | Console 印出 `[Quartz Job] Triggered at...` |
 | 4 | CXF Response 緩衝寫入 DB | `GET /rest/policies` | Console 出現 `[Audit Response (onClose)]`，DB 查出 audit 紀錄 |
-| 5 | SOAP WebService 呼叫 | 瀏覽器開 `/ws/soap/policies?wsdl` | 畫面正常載入 WSDL XML |
+| 5 | SOAP WebService 呼叫 | 瀏覽器開 `/Webservice/soap/policies?wsdl` | 畫面正常載入 WSDL XML |
 | 6 | 非同步 20 次銀行長輪詢 | `GET /rest/policies/test-async-bank` | 立即回傳 200，Console 背景印出步驟 1~4 重試過程 |
 | 7 | 外部 JAR Connection 控管 | `GET /rest/policies/test-external-jar` | Console 印出 Lib-A、Lib-B 執行紀錄，最後印出主專案關閉連線 |
 | 8 | HttpClient 繞過 SSL 寫 Log | `GET /rest/policies/test-rest-template`| 外網請求成功，MySQL `external_api_log` 新增 1 筆紀錄 |

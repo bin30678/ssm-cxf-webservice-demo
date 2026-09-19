@@ -17,7 +17,7 @@
     </context:component-scan>
 
     <!-- DB 系統參數載入器 (取代原本的 PropertyPlaceholderConfigurer) -->
-    <!-- 直接在裡面 new GenericDao() 拿連線，不需要依賴 Spring 注入 DataSource -->
+    <!-- 啟動時透過 dataSource1 讀取 system_properties；不載入 application.properties。 -->
     <bean class="com.example.cxfdemo.config.DatabasePropertyPlaceholderConfigurer" />
 
     <!-- 將載入的 DB 參數 ${system.app.url} 透過 MethodInvokingFactoryBean 寫入 GlobalConfig 的靜態變數 -->
@@ -61,21 +61,7 @@
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory1"/>
     </bean>
 
-    <!-- JavaMailSender 配置 (動態從 DatabasePropertyPlaceholderConfigurer / system_properties 讀取) -->
-    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
-        <property name="host" value="${mail.smtp.host:smtp.example.com}"/>
-        <property name="port" value="${mail.smtp.port:25}"/>
-        <property name="username" value="${mail.smtp.username:your_username}"/>
-        <property name="password" value="${mail.smtp.password:your_password}"/>
-        <property name="javaMailProperties">
-            <props>
-                <prop key="mail.transport.protocol">${mail.transport.protocol:smtp}</prop>
-                <prop key="mail.smtp.auth">${mail.smtp.auth:true}</prop>
-                <prop key="mail.smtp.starttls.enable">${mail.smtp.starttls.enable:true}</prop>
-                <prop key="mail.debug">${mail.debug:false}</prop>
-            </props>
-        </property>
-    </bean>
+    <!-- MailServiceImpl 自行從 ConfigSingleton 取得 SMTP 設定並建立寄信元件。 -->
 
     <tx:annotation-driven transaction-manager="transactionManager1"/>
 

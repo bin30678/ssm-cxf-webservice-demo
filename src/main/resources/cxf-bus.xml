@@ -57,9 +57,30 @@
             <ref bean="policyResource"/>
             <ref bean="fileUploadResource"/>
         </jaxrs:serviceBeans>
+        <!-- 僅套用 CXF REST；不影響 Spring MVC DispatcherServlet。 -->
+        <jaxrs:inInterceptors>
+            <ref bean="requestValidationInterceptor"/>
+        </jaxrs:inInterceptors>
+        <jaxrs:outInterceptors>
+            <ref bean="responseHeaderInterceptor"/>
+        </jaxrs:outInterceptors>
+        <jaxrs:outFaultInterceptors>
+            <ref bean="responseHeaderInterceptor"/>
+        </jaxrs:outFaultInterceptors>
     </jaxrs:server>
 
     <!-- JAX-WS SOAP Endpoints -->
-    <jaxws:endpoint id="policySoapEndpoint" implementor="#policyInquiryPortImpl" address="/soap/policies"/>
+    <jaxws:endpoint id="policySoapEndpoint" implementor="#policyInquiryPortImpl" address="/soap/policies">
+        <jaxws:inInterceptors>
+            <ref bean="requestValidationInterceptor"/>
+        </jaxws:inInterceptors>
+        <jaxws:outInterceptors>
+            <ref bean="responseHeaderInterceptor"/>
+        </jaxws:outInterceptors>
+        <jaxws:outFaultInterceptors>
+            <ref bean="unifiedFaultInterceptor"/>
+            <ref bean="responseHeaderInterceptor"/>
+        </jaxws:outFaultInterceptors>
+    </jaxws:endpoint>
 
 </beans>

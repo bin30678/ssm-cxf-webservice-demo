@@ -56,13 +56,15 @@ public class RequestValidationInterceptor extends AbstractPhaseInterceptor<Messa
 
         String contentType = baseMediaType(stringValue(message.get(Message.CONTENT_TYPE)));
         boolean soap = message instanceof SoapMessage;
-        boolean allowed = soap ? isSoap(contentType) : isJson(contentType);
+        // JAX-RS 檔案上傳使用 multipart；各端點仍由 @Consumes 限制可接受類型。
+        boolean allowed = soap ? isSoap(contentType)
+                : isJson(contentType) || "multipart/form-data".equals(contentType);
         if (!allowed) {
             log.warn("Unsupported Media Type in RequestValidationInterceptor: {}, soap: {}", contentType, soap);
             ServiceFaultException exception = new ServiceFaultException(
                     "UNSUPPORTED_MEDIA_TYPE",
                     soap ? "SOAP 僅接受 text/xml 或 application/soap+xml"
-                            : "REST 僅接受 application/json",
+                            : "REST 僅接受 application/json 或 multipart/form-data",
                     415);
             Fault fault = new Fault(exception);
             fault.setStatusCode(415);
